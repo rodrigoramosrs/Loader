@@ -1,0 +1,12 @@
+C:\Users\rodrigo.ramos\source\repos\Loader\Loader.Infra\bin\Debug\netcoreapp2.2\Loader.Infra.deps.json
+C:\Users\rodrigo.ramos\source\repos\Loader\Loader.Infra\bin\Debug\netcoreapp2.2\Loader.Infra.dll
+C:\Users\rodrigo.ramos\source\repos\Loader\Loader.Infra\bin\Debug\netcoreapp2.2\Loader.Infra.pdb
+C:\Users\rodrigo.ramos\source\repos\Loader\Loader.Infra\obj\Debug\netcoreapp2.2\Loader.Infra.csproj.CoreCompileInputs.cache
+C:\Users\rodrigo.ramos\source\repos\Loader\Loader.Infra\obj\Debug\netcoreapp2.2\Loader.Infra.AssemblyInfoInputs.cache
+C:\Users\rodrigo.ramos\source\repos\Loader\Loader.Infra\obj\Debug\netcoreapp2.2\Loader.Infra.AssemblyInfo.cs
+C:\Users\rodrigo.ramos\source\repos\Loader\Loader.Infra\obj\Debug\netcoreapp2.2\Loader.Infra.dll
+C:\Users\rodrigo.ramos\source\repos\Loader\Loader.Infra\obj\Debug\netcoreapp2.2\Loader.Infra.pdb
+C:\Users\rodrigo.ramos\source\repos\Loader\Loader.Infra\obj\Debug\netcoreapp2.2\Loader.Infra.csprojAssemblyReference.cache
+C:\Users\rodrigo.ramos\source\repos\Loader\Loader.Infra\bin\Debug\netcoreapp2.2\Loader.Domain.dll
+C:\Users\rodrigo.ramos\source\repos\Loader\Loader.Infra\bin\Debug\netcoreapp2.2\Loader.Domain.pdb
+C:\Users\rodrigo.ramos\source\repos\Loader\Loader.Infra\obj\Debug\netcoreapp2.2\Loader.Infra.csproj.CopyComplete

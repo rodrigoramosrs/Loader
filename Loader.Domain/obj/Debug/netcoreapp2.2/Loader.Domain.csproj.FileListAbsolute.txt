@@ -1,0 +1,8 @@
+C:\Users\rodrigo.ramos\source\repos\Loader\Loader.Domain\obj\Debug\netcoreapp2.2\Loader.Domain.csproj.CoreCompileInputs.cache
+C:\Users\rodrigo.ramos\source\repos\Loader\Loader.Domain\obj\Debug\netcoreapp2.2\Loader.Domain.AssemblyInfoInputs.cache
+C:\Users\rodrigo.ramos\source\repos\Loader\Loader.Domain\obj\Debug\netcoreapp2.2\Loader.Domain.AssemblyInfo.cs
+C:\Users\rodrigo.ramos\source\repos\Loader\Loader.Domain\bin\Debug\netcoreapp2.2\Loader.Domain.deps.json
+C:\Users\rodrigo.ramos\source\repos\Loader\Loader.Domain\bin\Debug\netcoreapp2.2\Loader.Domain.dll
+C:\Users\rodrigo.ramos\source\repos\Loader\Loader.Domain\bin\Debug\netcoreapp2.2\Loader.Domain.pdb
+C:\Users\rodrigo.ramos\source\repos\Loader\Loader.Domain\obj\Debug\netcoreapp2.2\Loader.Domain.dll
+C:\Users\rodrigo.ramos\source\repos\Loader\Loader.Domain\obj\Debug\netcoreapp2.2\Loader.Domain.pdb

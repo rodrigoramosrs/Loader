@@ -1,0 +1,29 @@
+﻿[
+  {
+    "ID": "cf56ddf7-93e0-4436-b58e-7ad952c3dce3",
+    "Name": "Portal de exames - Servico",
+    "WorkingDirectory": "C:\\temp\\MPE.Servico.WCF",
+    "BackupVersionDirectory": null,
+    "MainAssembly": "C:\\temp\\MPE.Servico.WCF\\bin\\MPE.Servico.WCF.dll",
+    "IISAppID": "",
+    "CommandLineBeforeUpdate": "%SYSTEMROOT%\\System32\\inetsrv\\appcmd stop apppool /apppool.name:\"MPE.Servico.WCF\"",
+    "CommandLineAfterUpdate": "%SYSTEMROOT%\\System32\\inetsrv\\appcmd start apppool /apppool.name:\"MPE.Servico.WCF\"",
+    "CheckVersionAfterUpdate": false,
+    "AutoUpdate": false,
+    "UrlOrPathToUpdateDefinition": "C:\\temp\\Updates\\IDCE\\update.json"
+  },
+  {
+    "ID": "eb97e12a-4abf-4826-a5c8-052d139c4727",
+    "Name": "IDCE WEB",
+    "WorkingDirectory": "C:\\temp\\IDCE.Web",
+    "BackupVersionDirectory": null,
+    "MainAssembly": "C:\\temp\\IDCE.Web\\bin\\iDCE.Web.dll",
+    "IISAppID": "",
+    "CommandLineBeforeUpdate": "%SYSTEMROOT%\\System32\\inetsrv\\appcmd stop apppool /apppool.name:\"iDCE.WEB\"",
+    "CommandLineAfterUpdate": "%SYSTEMROOT%\\System32\\inetsrv\\appcmd start apppool /apppool.name:\"iDCE.WEB\"",
+    "CheckVersionAfterUpdate" :  false,
+    "AutoUpdate": false,
+    "UrlOrPathToUpdateDefinition": "C:\\temp\\Updates\\IDCE\\update.json"
+  }
+
+]
