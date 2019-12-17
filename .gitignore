@@ -16,3 +16,5 @@ Loader.Infra/bin/*
 Loader.Infra/obj/*
 Loader.Service/bin/*
 Loader.Service/obj/*
+Loader.Application/Hangfire.db
+Loader.Application/healthchecksdb
