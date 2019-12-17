@@ -61,9 +61,9 @@ namespace Loader.Infra.Manager.Bridge
                         }
                         if (output == Output.External)
                         {
-                            cmd = $"{Directory.GetCurrentDirectory()}/cmd.win.bat \"{cmd}\"{dir}";
+                            cmd = $"{Directory.GetCurrentDirectory()}/cmd.win.bat \"{cmd.Replace("\r\n", " && ")}\"{dir}";
                         }
-                        cmd = $"/c \"{cmd}\"";
+                        cmd = $"/c \"{cmd.Replace("\r\n", " && ")}\"";
                         break;
                     case "mac":
                     case "gnu":

@@ -85,9 +85,10 @@ namespace Loader.Service.Services
             Stopwatch stopWatchTimer = Stopwatch.StartNew();
             
             updateResultReturn.AddMessage("Starting the update process", UpdateResultMessage.eMessageType.INFORMATION);
-            var comandLineBeforeResult = Shell.ExecuteTerminalCommand(UpdateEntry.UpdateInstruction.CommandLineBeforeUpdate);
-            if (comandLineBeforeResult.code > 0) throw new Exception($"Cannot run Commandline before update, see details: \r\n{comandLineBeforeResult.stdout}");
-            updateResultReturn.AddMessage($"Command line 'CommandLineBeforeUpdate' executed.\r\nOutput code: {comandLineBeforeResult.code}\r\nOutput data:{comandLineBeforeResult.stdout}", UpdateResultMessage.eMessageType.SUCCESS);
+            var comandLineBeforeResult = Shell.ExecuteTerminalCommand(UpdateEntry.UpdateInstruction.GetCommandLineBeforeUpdateWithReplacedParams());
+            if (comandLineBeforeResult.code > 0) throw new Exception($"Cannot run Commandline before update, see details.\r\nStdOut: {comandLineBeforeResult.stdout} \r\nStdErr: {comandLineBeforeResult.stderr}");
+
+            updateResultReturn.AddMessage($"Command line 'CommandLineBeforeUpdate' executed.\r\nOutput code: {comandLineBeforeResult.code}\r\nStdOut: {comandLineBeforeResult.stdout} \r\nStdErr: {comandLineBeforeResult.stderr}", UpdateResultMessage.eMessageType.SUCCESS);
 
             //Executando backup da pasta atual
             string workingFolderBackup = this.GenerateBackupFolderFullPathName(UpdateEntry.UpdateInstruction.ID, updateResultReturn.ID, UpdateEntry.UpdateInstruction.WorkingDirectory, UpdateEntry.CurrentVersion);
@@ -122,9 +123,10 @@ namespace Loader.Service.Services
             }
 
 
-            var comandLineAfterResult = Shell.ExecuteTerminalCommand(UpdateEntry.UpdateInstruction.CommandLineAfterUpdate);
-            if (comandLineAfterResult.code > 0) throw new Exception($"Cannot run Commandline after update, see details: \r\n{comandLineAfterResult.stdout}");
-            updateResultReturn.AddMessage($"Command line 'CommandLineBeforeUpdate' executed.\r\nOutput code: {comandLineAfterResult.code}\r\nOutput data:{comandLineAfterResult.stdout}", UpdateResultMessage.eMessageType.SUCCESS);
+            var comandLineAfterResult = Shell.ExecuteTerminalCommand(UpdateEntry.UpdateInstruction.GetCommandLineAfterUpdateWithReplacedParams());
+            if (comandLineAfterResult.code > 0) throw new Exception($"Cannot run Commandline after update, see details.\r\nStdOut: {comandLineAfterResult.stdout} \r\nStdErr: {comandLineAfterResult.stderr}");
+
+            updateResultReturn.AddMessage($"Command line 'CommandLineBeforeUpdate' executed.\r\nOutput code: {comandLineAfterResult.code}\r\nStdOut:{comandLineAfterResult.stdout} \r\nStdErr: {comandLineAfterResult.stderr}", UpdateResultMessage.eMessageType.SUCCESS);
 
             //Validando a versão após todo o processo para garantir que a versão está correta.
             if (UpdateEntry.UpdateInstruction.CheckVersionAfterUpdate)
@@ -183,9 +185,10 @@ namespace Loader.Service.Services
 
             updateResultReturn.AddMessage($"Trying to rollback version {CurrentVersion} to {RollbackVersion}", UpdateResultMessage.eMessageType.INFORMATION);
 
-            var comandLineBeforeResult = Shell.ExecuteTerminalCommand(UpdateInstruction.CommandLineBeforeUpdate);
-            if (comandLineBeforeResult.code > 0) throw new Exception($"Cannot run Commandline before update, see details: \r\n{comandLineBeforeResult.stdout}");
-            updateResultReturn.AddMessage($"Command line 'CommandLineBeforeUpdate' executed.\r\nOutput code: {comandLineBeforeResult.code}\r\nOutput data:{comandLineBeforeResult.stdout}", UpdateResultMessage.eMessageType.SUCCESS);
+            var comandLineBeforeResult = Shell.ExecuteTerminalCommand(UpdateInstruction.GetCommandLineBeforeUpdateWithReplacedParams());
+            if (comandLineBeforeResult.code > 0) throw new Exception($"Cannot run Commandline before update, see details.\r\nStdOut: {comandLineBeforeResult.stdout}\r\nStdErr: {comandLineBeforeResult.stderr}");
+
+            updateResultReturn.AddMessage($"Command line 'CommandLineBeforeUpdate' executed.\r\nOutput code: {comandLineBeforeResult.code}\r\nStdOut: {comandLineBeforeResult.stdout}\r\nStdErr: {comandLineBeforeResult.stderr}", UpdateResultMessage.eMessageType.SUCCESS);
 
 
             //Execuando Backup
@@ -199,9 +202,10 @@ namespace Loader.Service.Services
             updateResultReturn.AddMessage($"Rollback diretory {UpdateBackupEntry.FullPath} to {UpdateInstruction.WorkingDirectory}.", UpdateResultMessage.eMessageType.SUCCESS);
 
 
-            var comandLineAfterResult = Shell.ExecuteTerminalCommand(UpdateInstruction.CommandLineAfterUpdate);
-            if (comandLineAfterResult.code > 0) throw new Exception($"Cannot run Commandline after update, see details: \r\n{comandLineAfterResult.stdout}");
-            updateResultReturn.AddMessage($"Command line 'CommandLineBeforeUpdate' executed.\r\nOutput code: {comandLineAfterResult.code}\r\nOutput data:{comandLineAfterResult.stdout}", UpdateResultMessage.eMessageType.SUCCESS);
+            var comandLineAfterResult = Shell.ExecuteTerminalCommand(UpdateInstruction.GetCommandLineAfterUpdateWithReplacedParams());
+            if (comandLineAfterResult.code > 0) throw new Exception($"Cannot run Commandline after update, see details.r\nStdOut: {comandLineAfterResult.stdout}\r\nStdErr: {comandLineAfterResult.stderr}");
+
+            updateResultReturn.AddMessage($"Command line 'CommandLineBeforeUpdate' executed.\r\nOutput code: {comandLineAfterResult.code}\r\nStdOut: {comandLineAfterResult.stdout}\r\nStdErr: {comandLineAfterResult.stderr}", UpdateResultMessage.eMessageType.SUCCESS);
 
 
             stopWatchTimer.Stop();

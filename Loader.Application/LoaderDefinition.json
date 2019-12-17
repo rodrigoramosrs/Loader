@@ -20,8 +20,8 @@
     "MainAssembly": "C:\\temp\\IDCE.Web\\bin\\iDCE.Web.dll",
     "IISAppID": "",
     "CommandLineBeforeUpdate": "%SYSTEMROOT%\\System32\\inetsrv\\appcmd stop apppool /apppool.name:\"iDCE.WEB\"",
-    "CommandLineAfterUpdate": "%SYSTEMROOT%\\System32\\inetsrv\\appcmd start apppool /apppool.name:\"iDCE.WEB\"",
-    "CheckVersionAfterUpdate" :  false,
+    "CommandLineAfterUpdate": "C:\\temp\\Updates\\comando.bat",
+    "CheckVersionAfterUpdate": false,
     "AutoUpdate": false,
     "UrlOrPathToUpdateDefinition": "C:\\temp\\Updates\\IDCE\\update.json"
   }

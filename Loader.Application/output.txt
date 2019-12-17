@@ -1,0 +1,10 @@
+CD: C:\Users\rodrigo.ramos\source\repos\Loader\Loader.Application  
+ID: eb97e12a-4abf-4826-a5c8-052d139c4727  
+Name: IDCE WEB  
+WorkingDirectory: C:\temp\IDCE.Web  
+BackupVersionDirectory :   
+MainAssembly : C:\temp\IDCE.Web\bin\iDCE.Web.dll  
+IISAppID :   
+CheckVersionAfterUpdate: False  
+AutoUpdate : False  
+UrlOrPathToUpdateDefinition : C:\temp\Updates\IDCE\update.json  

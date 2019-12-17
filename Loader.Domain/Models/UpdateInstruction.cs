@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace Loader.Domain.Models
@@ -63,5 +64,48 @@ namespace Loader.Domain.Models
         /// </summary>
         public string UrlOrPathToUpdateDefinition { get; set; }
 
+        /// <summary>
+        /// Metodo reponsável por converter os parametros da linha de comando por valores das propriedades
+        /// </summary>
+        public string GetCommandLineBeforeUpdateWithReplacedParams()
+        {
+            string command = this.CommandLineBeforeUpdate;
+
+            if (command.EndsWith(".bat") || command.EndsWith(".sh"))
+                command = File.ReadAllText(this.CommandLineBeforeUpdate);
+
+            return this.DoReplaceParamsWithInternalData(command);
+        }
+        /// <summary>
+        /// Metodo reponsável por converter os parametros da linha de comando por valores das propriedades
+        /// </summary>
+        public string GetCommandLineAfterUpdateWithReplacedParams()
+        {
+            string command = this.CommandLineAfterUpdate;
+
+            if (command.EndsWith(".bat") || command.EndsWith(".sh"))
+                command = File.ReadAllText(this.CommandLineAfterUpdate);
+
+            return this.DoReplaceParamsWithInternalData(command);
+        }
+
+        private string DoReplaceParamsWithInternalData(string param)
+        {
+            List<string> ExclusionList = new List<string>() { "CommandLineBeforeUpdate", "_CommandLineBeforeUpdate", "CommandLineAfterUpdate", "_CommandLineAfterUpdate" };
+            string returnData = param;
+
+            
+
+            foreach (var property in this.GetType().GetProperties())
+            {
+                if (ExclusionList.Contains(property.Name)) continue;
+
+                object PropertyValue = property.GetValue(this);
+                returnData = returnData.Replace($"%{property.Name}%", (property.GetValue(this) ?? "").ToString());
+
+            }
+
+            return returnData;
+        }
     }
 }
