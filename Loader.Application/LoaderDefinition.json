@@ -19,7 +19,7 @@
     "BackupVersionDirectory": null,
     "MainAssembly": "C:\\temp\\IDCE.Web\\bin\\iDCE.Web.dll",
     "IISAppID": "",
-    "CommandLineBeforeUpdate": "%SYSTEMROOT%\\System32\\inetsrv\\appcmd stop apppool /apppool.name:\"iDCE.WEB\"",
+    "CommandLineBeforeUpdate": "%SYSTEMROOT%\\System32\\inetsrv\\appcmd stop apppool /apppool.name:\"iDCE.WEB\" | exit 0",
     "CommandLineAfterUpdate": "C:\\temp\\Updates\\comando.bat",
     "CheckVersionAfterUpdate": false,
     "AutoUpdate": false,

@@ -45,6 +45,7 @@ namespace Loader.Application
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
+                  .UseIISIntegration()
                 .UseStartup<Startup>();
     }
 }
