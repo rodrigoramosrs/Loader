@@ -15,6 +15,8 @@ using Hangfire.Logging;
 using Hangfire.Logging.LogProviders;
 using Microsoft.AspNetCore.Mvc.Filters;
 using System;
+using Loader.Service.Services;
+using Loader.Service.Services.Analytics;
 
 namespace Loader.Application
 {
@@ -42,13 +44,15 @@ namespace Loader.Application
             
             //Configurando o Log do hangfire para elmah
 
-
             services.AddHangfireServer();
-
             services.AddTransient<Service.Services.UpdateService, Service.Services.UpdateService>(serviceProvider =>
             {
-                
                 return new Service.Services.UpdateService(new Infra.Data.Repository.UpdateRepository(_env.ContentRootPath));
+            });
+
+            services.AddTransient<Service.Services.Analytics.BaseAnalyticsService, Service.Services.Analytics.BaseAnalyticsService>(serviceProvider =>
+            {
+                return new Service.Services.Analytics.GoogleAnalyticsService(Configuration["Analytics:ID"], Configuration["Customer:Name"], Configuration["Customer:ID"]);
             });
 
             services.AddHealthChecks();
@@ -63,11 +67,17 @@ namespace Loader.Application
                 configuration.RootPath = "ClientApp/build";
             });
 
+            // Register the Swagger generator, defining 1 or more Swagger documents
+                services.AddSwaggerGen(c =>
+                {
+                    c.SwaggerDoc("v1", new Swashbuckle.AspNetCore.Swagger.Info() { Title = "Loader Swagger API", Version = "v1" });
+                });
+
 
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IBackgroundJobClient backgroundJobs, ILoggerFactory LoggerFactory, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IBackgroundJobClient backgroundJobs, IRecurringJobManager recurringJobManager, ILoggerFactory LoggerFactory, IHostingEnvironment env, BaseAnalyticsService AnalyticsService)
         {
             GlobalConfiguration.Configuration.UseLogProvider(new Loader.Application.Middleware.Log.ElmahLogProvider());
 
@@ -92,6 +102,12 @@ namespace Loader.Application
             app.UseHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions());
             app.UseHealthChecksUI(config => config.UIPath = "/health-ui");
             app.UseElmah();
+            app.UseSwagger();
+
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Loader Swagger API");
+            });
 
             app.UseMvc(routes =>
             {
@@ -110,7 +126,10 @@ namespace Loader.Application
                 }
             });
 
+            recurringJobManager.AddOrUpdate("update", () => 
             
+                Console.WriteLine()
+            , Cron.Hourly);
         }
     }
 }

@@ -2,6 +2,7 @@
 using Loader.Domain.Entities;
 using Loader.Domain.Interfaces;
 using Loader.Domain.Models;
+using Loader.Domain.Models.Update;
 using Loader.Infra.Manager;
 using Loader.Infra.Manager.Bridge;
 using Newtonsoft.Json;
@@ -83,78 +84,98 @@ namespace Loader.Service.Services
                 UpdateInstructionID = UpdateEntry.UpdateInstruction.ID
             };
             Stopwatch stopWatchTimer = Stopwatch.StartNew();
+
+            try
+            {
+                updateResultReturn.AddMessage("Starting the update process", UpdateResultMessage.eMessageType.INFORMATION);
+                var comandLineBeforeResult = Shell.ExecuteTerminalCommand(UpdateEntry.UpdateInstruction.GetCommandLineBeforeUpdateWithReplacedParams());
+                if (comandLineBeforeResult.code > 0) throw new Exception($"Cannot run Commandline before update, see details.\r\nStdOut: {comandLineBeforeResult.stdout} \r\nStdErr: {comandLineBeforeResult.stderr}");
+
+                updateResultReturn.AddMessage($"Command line 'CommandLineBeforeUpdate' executed.\r\nOutput code: {comandLineBeforeResult.code}\r\nStdOut: {comandLineBeforeResult.stdout} \r\nStdErr: {comandLineBeforeResult.stderr}", UpdateResultMessage.eMessageType.SUCCESS);
+
+                //Executando backup da pasta atual
+                string workingFolderBackup = this.GenerateBackupFolderFullPathName(UpdateEntry.UpdateInstruction.ID, updateResultReturn.ID, UpdateEntry.UpdateInstruction.WorkingDirectory, UpdateEntry.CurrentVersion);
+                //string BackupSufix = $"{ DateTime.Now.ToString("yyyy-dd-M_HH-mm-ss") }_{ UpdateEntry.CurrentVersion}";
+                //string workingFolderBackup = $"{UpdateEntry.UpdateInstruction.WorkingDirectory}_{BackupSufix}";
+                bool backupDone = DirectoryManager.RenameDirectory(UpdateEntry.UpdateInstruction.WorkingDirectory, workingFolderBackup);
+                if (!backupDone) throw new Exception($"Cannot create backup folder.");
+                updateResultReturn.AddMessage($"Backup the current version was succeeded. Folder created is {workingFolderBackup}", UpdateResultMessage.eMessageType.SUCCESS);
+
+                // Criando diretório após mover o anterior
+                Directory.CreateDirectory(UpdateEntry.UpdateInstruction.WorkingDirectory);
+                updateResultReturn.AddMessage($"Creation of new folder for update was succeeded. Folder created is {UpdateEntry.UpdateInstruction.WorkingDirectory}", UpdateResultMessage.eMessageType.SUCCESS);
+
+                //Descompactando os arquivos para a pasta nova
+                string ZipUpdateFilePathOrUrl = UpdateEntry.PathOrURLToFileUpdate;
+                bool decompressed = ZipFileManger.Decompress(ZipUpdateFilePathOrUrl, UpdateEntry.UpdateInstruction.WorkingDirectory);
+                if (!decompressed) throw new Exception($"Cannot decompress file '{ZipUpdateFilePathOrUrl}' into folder '{UpdateEntry.UpdateInstruction.WorkingDirectory}'");
+                updateResultReturn.AddMessage($"Unzip update file was succeeded. Update file of path is {ZipUpdateFilePathOrUrl}, its decompressed at folder {UpdateEntry.UpdateInstruction.WorkingDirectory}", UpdateResultMessage.eMessageType.SUCCESS);
+
+                //Valida os arquivos e diretórios que devem permanecer e faço a copia para o novo diretório após a atualização
+                updateResultReturn.AddMessage($"Preparing to start copy of 'FilesAndPathToKeep'. The number of files and path to keep is {UpdateEntry.FilesAndPathToKeep.Length}", UpdateResultMessage.eMessageType.INFORMATION);
+                foreach (var FileOrFolder in UpdateEntry.FilesAndPathToKeep)
+                {
+                    string SourcelFile = Path.Combine($"{workingFolderBackup}", $"{FileOrFolder}");
+                    string DestinationFile = Path.Combine($"{UpdateEntry.UpdateInstruction.WorkingDirectory}", $"{FileOrFolder}");
+
+                    try
+                    {
+                        bool copyResult = DirectoryManager.CopyFilesOrFolder(SourcelFile, DestinationFile);
+                        updateResultReturn.AddMessage($"File/Folder copy from '{SourcelFile}' to '{DestinationFile}' " + (copyResult ? " succeeded" : " does not succeeded"),
+                            copyResult ? UpdateResultMessage.eMessageType.SUCCESS : UpdateResultMessage.eMessageType.ERROR);
+                    }
+                    catch (Exception ex)
+                    {
+                        updateResultReturn.AddMessage($"File/Folder copy from '{SourcelFile}' to '{DestinationFile}' error.\r\nDetalis: " + ex.ToString(), UpdateResultMessage.eMessageType.ERROR);
+                    }
+                }
+
+
+                var comandLineAfterResult = Shell.ExecuteTerminalCommand(UpdateEntry.UpdateInstruction.GetCommandLineAfterUpdateWithReplacedParams());
+                if (comandLineAfterResult.code > 0) throw new Exception($"Cannot run Commandline after update, see details.\r\nStdOut: {comandLineAfterResult.stdout} \r\nStdErr: {comandLineAfterResult.stderr}");
+
+                updateResultReturn.AddMessage($"Command line 'CommandLineBeforeUpdate' executed.\r\nOutput code: {comandLineAfterResult.code}\r\nStdOut:{comandLineAfterResult.stdout} \r\nStdErr: {comandLineAfterResult.stderr}", UpdateResultMessage.eMessageType.SUCCESS);
+
+                //Validando a versão após todo o processo para garantir que a versão está correta.
+                if (UpdateEntry.UpdateInstruction.CheckVersionAfterUpdate)
+                {
+                    System.Version CurrentVersion = AssemblyManager.GetAssemblyVersion(UpdateEntry.UpdateInstruction.MainAssembly);
+                    bool IsNewerVersion = AssemblyManager.IsNewerVersion(CurrentVersion, UpdateEntry.NewVersion);
+                    if (UpdateEntry.NewVersion != CurrentVersion)
+                        throw new Exception($"Version validation  after update does not pass. Expected version is '{ UpdateEntry.NewVersion }' but found '{CurrentVersion}'");
+                    updateResultReturn.AddMessage($"Version validation after update passed", UpdateResultMessage.eMessageType.SUCCESS);
+                }
+                else
+                    updateResultReturn.AddMessage($"Version validation is not executed. CheckVersionAfterUpdate is false", UpdateResultMessage.eMessageType.INFORMATION);
+
+
+                updateResultReturn.IsSuccess = true;
+
+                stopWatchTimer.Stop();
+                updateResultReturn.TimeSpentMilliseconds = stopWatchTimer.ElapsedMilliseconds;
+
+                string alepsedTime = string.Format("{0:D2}h:{1:D2}m:{2:D2}s:{3:D3}ms",
+                            stopWatchTimer.Elapsed.Hours,
+                            stopWatchTimer.Elapsed.Minutes,
+                            stopWatchTimer.Elapsed.Seconds,
+                            stopWatchTimer.Elapsed.Milliseconds);
+
+
+                updateResultReturn
+                    .AddMessage($"Updated '{UpdateEntry.UpdateInstruction.Name}' from '{UpdateEntry.CurrentVersion}' to '{UpdateEntry.NewVersion}'. Alepsed time: {alepsedTime}",
+                                updateResultReturn.IsSuccess ?
+                                (updateResultReturn.Messages.Where(x => x.Type == UpdateResultMessage.eMessageType.ERROR).Count() <= 0 ? UpdateResultMessage.eMessageType.SUCCESS : UpdateResultMessage.eMessageType.WARNING) : UpdateResultMessage.eMessageType.ERROR);
+            }
+            catch (Exception ex)
+            {
+                stopWatchTimer.Stop();
+                updateResultReturn.TimeSpentMilliseconds = stopWatchTimer.ElapsedMilliseconds;
+
+                updateResultReturn
+                   .AddMessage($"Error updating '{UpdateEntry.UpdateInstruction.Name}' from '{UpdateEntry.CurrentVersion}' to '{UpdateEntry.NewVersion}' see details.\r\nDetails: " + ex.ToString(), UpdateResultMessage.eMessageType.ERROR);
+                updateResultReturn.IsSuccess = false;
+            }
             
-            updateResultReturn.AddMessage("Starting the update process", UpdateResultMessage.eMessageType.INFORMATION);
-            var comandLineBeforeResult = Shell.ExecuteTerminalCommand(UpdateEntry.UpdateInstruction.GetCommandLineBeforeUpdateWithReplacedParams());
-            if (comandLineBeforeResult.code > 0) throw new Exception($"Cannot run Commandline before update, see details.\r\nStdOut: {comandLineBeforeResult.stdout} \r\nStdErr: {comandLineBeforeResult.stderr}");
-
-            updateResultReturn.AddMessage($"Command line 'CommandLineBeforeUpdate' executed.\r\nOutput code: {comandLineBeforeResult.code}\r\nStdOut: {comandLineBeforeResult.stdout} \r\nStdErr: {comandLineBeforeResult.stderr}", UpdateResultMessage.eMessageType.SUCCESS);
-
-            //Executando backup da pasta atual
-            string workingFolderBackup = this.GenerateBackupFolderFullPathName(UpdateEntry.UpdateInstruction.ID, updateResultReturn.ID, UpdateEntry.UpdateInstruction.WorkingDirectory, UpdateEntry.CurrentVersion);
-            //string BackupSufix = $"{ DateTime.Now.ToString("yyyy-dd-M_HH-mm-ss") }_{ UpdateEntry.CurrentVersion}";
-            //string workingFolderBackup = $"{UpdateEntry.UpdateInstruction.WorkingDirectory}_{BackupSufix}";
-            bool backupDone = DirectoryManager.RenameDirectory(UpdateEntry.UpdateInstruction.WorkingDirectory, workingFolderBackup);
-            if (!backupDone) throw new Exception($"Cannot create backup folder.");
-            updateResultReturn.AddMessage($"Backup the current version was succeeded. Folder created is {workingFolderBackup}", UpdateResultMessage.eMessageType.SUCCESS);
-
-            // Criando diretório após mover o anterior
-            Directory.CreateDirectory(UpdateEntry.UpdateInstruction.WorkingDirectory);
-            updateResultReturn.AddMessage($"Creation of new folder for update was succeeded. Folder created is {UpdateEntry.UpdateInstruction.WorkingDirectory}", UpdateResultMessage.eMessageType.SUCCESS);
-
-            //Descompactando os arquivos para a pasta nova
-            string ZipUpdateFilePathOrUrl = UpdateEntry.PathOrURLToFileUpdate;
-            bool decompressed = ZipFileManger.Decompress(ZipUpdateFilePathOrUrl, UpdateEntry.UpdateInstruction.WorkingDirectory);
-            if (!decompressed) throw new Exception($"Cannot decompress file '{ZipUpdateFilePathOrUrl}' into folder '{UpdateEntry.UpdateInstruction.WorkingDirectory}'");
-            updateResultReturn.AddMessage($"Unzip update file was succeeded. Update file of path is {ZipUpdateFilePathOrUrl}, its decompressed at folder {UpdateEntry.UpdateInstruction.WorkingDirectory}", UpdateResultMessage.eMessageType.SUCCESS);
-
-            //Valida os arquivos e diretórios que devem permanecer e faço a copia para o novo diretório após a atualização
-            updateResultReturn.AddMessage($"Preparing to start copy of 'FilesAndPathToKeep'. The number of files and path to keep is {UpdateEntry.FilesAndPathToKeep.Length}", UpdateResultMessage.eMessageType.INFORMATION);
-            foreach (var FileOrFolder in UpdateEntry.FilesAndPathToKeep)
-            {
-                string SourcelFile = Path.Combine($"{workingFolderBackup}", $"{FileOrFolder}");
-                string DestinationFile = Path.Combine($"{UpdateEntry.UpdateInstruction.WorkingDirectory}", $"{FileOrFolder}");
-
-                bool copyResult = DirectoryManager.CopyFilesOrFolder(SourcelFile, DestinationFile);
-
-                updateResultReturn.AddMessage($"File/Folder copy from '{SourcelFile}' to '{DestinationFile}' " + (copyResult ? " succeeded" : " does not succeeded"),
-                   copyResult ? UpdateResultMessage.eMessageType.SUCCESS : UpdateResultMessage.eMessageType.ERROR);
-
-            }
-
-
-            var comandLineAfterResult = Shell.ExecuteTerminalCommand(UpdateEntry.UpdateInstruction.GetCommandLineAfterUpdateWithReplacedParams());
-            if (comandLineAfterResult.code > 0) throw new Exception($"Cannot run Commandline after update, see details.\r\nStdOut: {comandLineAfterResult.stdout} \r\nStdErr: {comandLineAfterResult.stderr}");
-
-            updateResultReturn.AddMessage($"Command line 'CommandLineBeforeUpdate' executed.\r\nOutput code: {comandLineAfterResult.code}\r\nStdOut:{comandLineAfterResult.stdout} \r\nStdErr: {comandLineAfterResult.stderr}", UpdateResultMessage.eMessageType.SUCCESS);
-
-            //Validando a versão após todo o processo para garantir que a versão está correta.
-            if (UpdateEntry.UpdateInstruction.CheckVersionAfterUpdate)
-            {
-                System.Version CurrentVersion = AssemblyManager.GetAssemblyVersion(UpdateEntry.UpdateInstruction.MainAssembly);
-                bool IsNewerVersion = AssemblyManager.IsNewerVersion(CurrentVersion, UpdateEntry.NewVersion);
-                if (UpdateEntry.NewVersion != CurrentVersion)
-                    throw new Exception($"Version validation  after update does not pass. Expected version is '{ UpdateEntry.NewVersion }' but found '{CurrentVersion}'");
-                updateResultReturn.AddMessage($"Version validation after update passed", UpdateResultMessage.eMessageType.SUCCESS);
-            }
-            else
-                updateResultReturn.AddMessage($"Version validation is not executed. CheckVersionAfterUpdate is false", UpdateResultMessage.eMessageType.INFORMATION);
-
-
-            updateResultReturn.IsSuccess = true;
-
-            stopWatchTimer.Stop();
-            updateResultReturn.TimeSpentMilliseconds = stopWatchTimer.ElapsedMilliseconds;
-
-            string alepsedTime = string.Format("{0:D2}h:{1:D2}m:{2:D2}s:{3:D3}ms",
-                        stopWatchTimer.Elapsed.Hours,
-                        stopWatchTimer.Elapsed.Minutes,
-                        stopWatchTimer.Elapsed.Seconds,
-                        stopWatchTimer.Elapsed.Milliseconds);
-
-            updateResultReturn
-                .AddMessage($"Updated '{UpdateEntry.UpdateInstruction.Name}' from '{UpdateEntry.CurrentVersion}' to '{UpdateEntry.NewVersion}'. Alepsed time: {alepsedTime}",
-                            updateResultReturn.IsSuccess ? UpdateResultMessage.eMessageType.SUCCESS : UpdateResultMessage.eMessageType.ERROR);
 
             this._UpdateRepository.WriteUpdateInstructionResult(updateResultReturn);
 
@@ -219,7 +240,8 @@ namespace Loader.Service.Services
 
             updateResultReturn
                 .AddMessage($"Rollback '{UpdateInstruction.Name}' from '{CurrentVersion}' to '{RollbackVersion}'. Alepsed time: {alepsedTime}",
-                            updateResultReturn.IsSuccess ? UpdateResultMessage.eMessageType.SUCCESS : UpdateResultMessage.eMessageType.ERROR);
+                             updateResultReturn.IsSuccess ?
+                            (updateResultReturn.Messages.Where(x => x.Type == UpdateResultMessage.eMessageType.ERROR).Count() <= 0 ? UpdateResultMessage.eMessageType.SUCCESS : UpdateResultMessage.eMessageType.WARNING) : UpdateResultMessage.eMessageType.ERROR);
 
             this._UpdateRepository.WriteUpdateInstructionResult(updateResultReturn);
             return updateResultReturn;

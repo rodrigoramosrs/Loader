@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace Loader.Domain.Models
+namespace Loader.Domain.Models.Update
 {
     public class UpdateInstruction
     {

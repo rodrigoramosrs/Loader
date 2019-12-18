@@ -1,5 +1,6 @@
 ﻿using Loader.Domain.Interfaces;
 using Loader.Domain.Models;
+using Loader.Domain.Models.Update;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

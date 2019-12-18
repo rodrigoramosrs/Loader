@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Loader.Domain.Models
+namespace Loader.Domain.Models.Update
 {
     public class UpdateFile
     {

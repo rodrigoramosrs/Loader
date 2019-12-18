@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Loader.Domain.Models
+namespace Loader.Domain.Models.Update
 {
     public class UpdateResult 
     {
@@ -35,6 +35,7 @@ namespace Loader.Domain.Models
         {
             SUCCESS,
             ERROR,
+            WARNING,
             INFORMATION
         };
 

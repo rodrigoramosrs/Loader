@@ -6,8 +6,8 @@
     "BackupVersionDirectory": null,
     "MainAssembly": "C:\\temp\\MPE.Servico.WCF\\bin\\MPE.Servico.WCF.dll",
     "IISAppID": "",
-    "CommandLineBeforeUpdate": "%SYSTEMROOT%\\System32\\inetsrv\\appcmd stop apppool /apppool.name:\"MPE.Servico.WCF\"",
-    "CommandLineAfterUpdate": "%SYSTEMROOT%\\System32\\inetsrv\\appcmd start apppool /apppool.name:\"MPE.Servico.WCF\"",
+    "CommandLineBeforeUpdate": "%SYSTEMROOT%\\System32\\inetsrv\\appcmd stop apppool /apppool.name:\"MPE.Servico.WCF\" | exit 0",
+    "CommandLineAfterUpdate": "%SYSTEMROOT%\\System32\\inetsrv\\appcmd start apppool /apppool.name:\"MPE.Servico.WCF\" | exit 0",
     "CheckVersionAfterUpdate": false,
     "AutoUpdate": false,
     "UrlOrPathToUpdateDefinition": "C:\\temp\\Updates\\IDCE\\update.json"
