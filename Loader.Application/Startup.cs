@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using System;
 using Loader.Service.Services;
 using Loader.Service.Services.Analytics;
+using Loader.Application.Middleware.Log;
 
 namespace Loader.Application
 {
@@ -36,6 +37,8 @@ namespace Loader.Application
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            GlobalConfiguration.Configuration.UseLogProvider(new Loader.Application.Middleware.Log.ElmahLogProvider());
+
             services.AddHangfire(configuration => configuration
                 .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
                 .UseSimpleAssemblyNameTypeSerializer()
@@ -57,7 +60,13 @@ namespace Loader.Application
 
             services.AddHealthChecks();
             services.AddHealthChecksUI();
-            services.AddElmah<XmlFileErrorLog>(options => { options.LogPath = @".\log"; options.Path = "log"; });
+            services.AddElmah<XmlFileErrorLog>(options => 
+            {
+                options.LogPath = @".\log";
+                options.Path = "log";
+                options.ApplicationName = "Loader.Application";
+                options.Notifiers.Add(new Middleware.Log.ElmahLogAnalyticsNotifier(new Service.Services.Analytics.GoogleAnalyticsService(Configuration["Analytics:ID"], Configuration["Customer:Name"], Configuration["Customer:ID"])));
+            });
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
@@ -75,11 +84,16 @@ namespace Loader.Application
 
 
         }
+        void ErrorLog_Filtering(object sender, ExceptionFilterEventArgs e)
+        {
+            // don't log HttpRequestValidationException's
+            
+        }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IBackgroundJobClient backgroundJobs, IRecurringJobManager recurringJobManager, ILoggerFactory LoggerFactory, IHostingEnvironment env, BaseAnalyticsService AnalyticsService)
         {
-            GlobalConfiguration.Configuration.UseLogProvider(new Loader.Application.Middleware.Log.ElmahLogProvider());
+            
 
             if (env.IsDevelopment())
             {
@@ -102,6 +116,7 @@ namespace Loader.Application
             app.UseHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions());
             app.UseHealthChecksUI(config => config.UIPath = "/health-ui");
             app.UseElmah();
+            
             app.UseSwagger();
 
             app.UseSwaggerUI(c =>

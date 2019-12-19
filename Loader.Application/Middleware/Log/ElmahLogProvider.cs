@@ -1,4 +1,5 @@
 ﻿using Hangfire.Logging;
+using Loader.Service.Services.Analytics;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -27,7 +28,9 @@ namespace Loader.Application.Middleware.Log
             // because it usually contain valuable information, but it can be `null` for regular
             // messages.
             //Console.WriteLine(String.Format("{0}: {1} {2} {3}", logLevel, Name, messageFunc(), exception));
-            ElmahCore.ElmahExtensions.RiseError(new Exception(String.Format("{0}: {1} {2} {3}", logLevel, Name, messageFunc(), exception)));
+            Exception ExceptionLog = new Exception(String.Format("{0}: {1} {2} {3}", logLevel, Name, messageFunc(), exception));
+            ElmahCore.ElmahExtensions.RiseError(ExceptionLog);
+            
             // Telling LibLog the message was successfully logged.
             return true;
         }
@@ -40,7 +43,7 @@ namespace Loader.Application.Middleware.Log
             // Logger name usually contains the full name of a type that uses it,
             // e.g. "Hangfire.Server.RecurringJobScheduler". It's used to know the
             // context of this or that message and for filtering purposes.
-            return new ElmahLog { Name = name };
+            return new ElmahLog () { Name = name };
         }
     }
 

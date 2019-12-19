@@ -32,21 +32,22 @@ namespace Loader.Application.Controllers
         [HttpGet("[action]")]
         public object GetUpdateInstructionList()
         {
-            this.DoAnalytics("UpdateJobController", "GetUpdateInstructionList","","");
+            this.DoAnalytics("UpdateJobController", "GetUpdateInstructionList","", "GetUpdateInstructionList");
             return _UpdateService.GetUpdateInstructionList();
         }
         [HttpGet("[action]")]
         public object GetUpdateUpdateInstructionByID(string id)
         {
-            this.DoAnalytics("UpdateJobController", "GetUpdateUpdateInstructionByID", "", id);
-            return _UpdateService.GetUpdateInstructionByID(new Guid(id));
+            var returnData = _UpdateService.GetUpdateInstructionByID(new Guid(id));
+            this.DoAnalytics("UpdateJobController", "GetUpdateUpdateInstructionByID", "", $"Getting update instruction for id {returnData.Name}");
+            return returnData;
         }
 
         [HttpGet("[action]")]
         public object GetUpdateEntry(string id)
         {
-            this.DoAnalytics("UpdateJobController", "GetUpdateEntry", "", id);
             var instruction = _UpdateService.GetUpdateInstructionByID(new Guid(id));
+            this.DoAnalytics("UpdateJobController", "GetUpdateEntry", "", $"Getting update entry for {instruction.Name}");
             return _UpdateService.HasUpdate(instruction);
         }
 
@@ -54,9 +55,10 @@ namespace Loader.Application.Controllers
         public object DoUpdate([FromBody]UpdateInstruction updateInstruction)
         {
             UpdateInstruction instruction = _UpdateService.GetUpdateInstructionByID(updateInstruction.ID);
+            string ReturnData = _backgroundJobs.Enqueue(() => _UpdateService.DoUpdate(instruction));
+            this.DoAnalytics("UpdateJobController", "DoUpdate", "", $"Rolling update for '{instruction.Name}'. Schedule number is " + ReturnData);
 
-            this.DoAnalytics("UpdateJobController", "DoUpdate", "", $"Rolling update '{instruction.Name}'");
-            return _backgroundJobs.Enqueue(() => _UpdateService.DoUpdate(instruction));
+            return ReturnData;
         }
 
 
@@ -87,9 +89,9 @@ namespace Loader.Application.Controllers
         }
 
 
-        private void DoAnalytics(string Category, string Action, string Label, string Value)
+        private async void DoAnalytics(string Category, string Action, string Label, string Description)
         {
-            var modelData = new Domain.Models.Analytics.AnalyticsData() { ActionName = Action, Category = Category, Label = Label, Value = Value };
+            var modelData = new Domain.Models.Analytics.AnalyticsData() { Name = Description, Category = $"Loader.Application.{Category}.{Action}",  Description = Description };
             Task.Run(() => this._AnalyticsService.Send(modelData) );
         }
 

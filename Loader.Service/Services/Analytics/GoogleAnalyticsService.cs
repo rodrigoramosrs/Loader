@@ -14,7 +14,7 @@ namespace Loader.Service.Services.Analytics
         public override Task<bool> Send(AnalyticsData AnalyticsData)
         {
             var helper = new GoogleAnalyticsHelper(AnalyticsID, this.CustomerID);
-            var result = helper.TrackEvent(AnalyticsData.Category, AnalyticsData.ActionName, AnalyticsData.Label, null).Result;// AnalyticsData.Value).Result;
+            var result = helper.TrackEvent(AnalyticsData.Category, AnalyticsData.Name, "{" + $"\"ID\": {CustomerID}" + $", \"Name\": \"{CustomerName}\"" + "}", null).Result;// AnalyticsData.Value).Result;
             if (!result.IsSuccessStatusCode)
             {
                 new Exception("something went wrong");
