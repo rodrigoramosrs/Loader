@@ -22,9 +22,9 @@ namespace Loader.Application.Middleware.Log
         {
             this._AnalyticsService.Send(new Domain.Models.Analytics.AnalyticsData()
             {
-                Name = error.ToString(),
+                Name = error.ToString() + ".\r\n" + error.Exception.ToString(),
                 Category = "Loader.Application.Middleware.ElmahLogNotifier.Exception",
-                Description = error.ToString()
+                Description = error.ToString() + ".\r\n" + error.Exception.ToString()
             }
             );
         }

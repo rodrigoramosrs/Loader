@@ -16,36 +16,12 @@ namespace Loader.Application
     {
         public static void Main(string[] args)
         {
-            /*
-            UpdateInstruction definition = new UpdateInstruction()
-            {
-                AutoUpdate = false,
-                CommandLineAfterUpdate = "%SYSTEMROOT%\\System32\\inetsrv\\appcmd start apppool /apppool.name:\"MPE.Servico.WCF\"",
-                CommandLineBeforeUpdate = "%SYSTEMROOT%\\System32\\inetsrv\\appcmd stop apppool /apppool.name:\"MPE.Servico.WCF\"",
-                ID = Guid.NewGuid(),
-                IISAppID = "",
-                MainAssembly = @"C:\temp\MPE.Servico.WCF\bin\MPE.Servico.WCF.dll",
-                WorkingDirectory = @"C:\temp\MPE.Servico.WCF",
-                Name = "Portal de exames - Servico",
-                //FolderToGetUpdate = "c:\\TEMP\\Updates\\",
-                UrlOrPathToUpdateDefinition = @"C:\temp\Updates\update.json",
-                
-            };
-
-            UpdateEntry UpdateEntry = UpdateService.HasUpdate(definition);
-
-            if (UpdateEntry.HasUpdate)
-            {
-               UpdateResult result = UpdateService.DoUpdate(UpdateEntry);
-               Console.WriteLine(result.Message);
-            }*/
-
             CreateWebHostBuilder(args).Build().Run();
         }
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
-                  .UseIISIntegration()
-                .UseStartup<Startup>();
+                   .UseIISIntegration()
+                   .UseStartup<Startup>();
     }
 }
