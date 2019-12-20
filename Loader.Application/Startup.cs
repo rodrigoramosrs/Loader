@@ -18,6 +18,7 @@ using System;
 using Loader.Service.Services;
 using Loader.Service.Services.Analytics;
 using Loader.Application.Middleware.Log;
+using Loader.Application.Middleware.Request;
 
 namespace Loader.Application
 {
@@ -68,6 +69,8 @@ namespace Loader.Application
                 options.Notifiers.Add(new Middleware.Log.ElmahLogAnalyticsNotifier(new Service.Services.Analytics.GoogleAnalyticsService(Configuration["Analytics:ID"], Configuration["Customer:Name"], Configuration["Customer:ID"])));
             });
 
+            
+
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
             // In production, the React files will be served from this directory
@@ -83,11 +86,6 @@ namespace Loader.Application
                 });
 
 
-        }
-        void ErrorLog_Filtering(object sender, ExceptionFilterEventArgs e)
-        {
-            // don't log HttpRequestValidationException's
-            
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -122,7 +120,10 @@ namespace Loader.Application
             app.UseSwaggerUI(c =>
             {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "Loader Swagger API");
+                
             });
+
+            app.UseMiddleware<RequestResponseLoggingMiddleware>(AnalyticsService);
 
             app.UseMvc(routes =>
             {
@@ -142,7 +143,6 @@ namespace Loader.Application
             });
 
             recurringJobManager.AddOrUpdate("update", () => 
-            
                 Console.WriteLine()
             , Cron.Hourly);
         }

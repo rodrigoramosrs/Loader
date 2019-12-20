@@ -13,8 +13,8 @@ namespace Loader.Service.Services.Analytics
 
         public override Task<bool> Send(AnalyticsData AnalyticsData)
         {
-            var helper = new GoogleAnalyticsHelper(AnalyticsID, this.CustomerID);
-            var result = helper.TrackEvent(AnalyticsData.Category, AnalyticsData.Name, "{" + $"\"ID\": {CustomerID}" + $", \"Name\": \"{CustomerName}\"" + "}", null).Result;// AnalyticsData.Value).Result;
+            var helper = new GoogleAnalyticsHelper(this.AnalyticsID, this.CustomerID);
+            var result = helper.TrackEvent(AnalyticsData,CustomerID, CustomerName).Result;//AnalyticsData.Category, AnalyticsData.Name, "{" + $"\"ID\": {CustomerID}" + $", \"Name\": \"{CustomerName}\"" + "}", null).Result;// AnalyticsData.Value).Result;
             if (!result.IsSuccessStatusCode)
             {
                 new Exception("something went wrong");
@@ -38,13 +38,8 @@ namespace Loader.Service.Services.Analytics
             this.googleClientId = clientId;
         }
 
-        public async Task<HttpResponseMessage> TrackEvent(string category, string action, string label, string value = null)
+        public async Task<HttpResponseMessage> TrackEvent(AnalyticsData AnalyticsData, string CustomerID, string CustomerName)//string category, string action, string label, string type = "event", string value = null)
         {
-            if (string.IsNullOrEmpty(category))
-                throw new ArgumentNullException(nameof(category));
-
-            if (string.IsNullOrEmpty(action))
-                throw new ArgumentNullException(nameof(action));
 
             using (var httpClient = new HttpClient())
             {
@@ -53,21 +48,43 @@ namespace Loader.Service.Services.Analytics
                     new KeyValuePair<string, string>("v", googleVersion),
                     new KeyValuePair<string, string>("tid", googleTrackingId),
                     new KeyValuePair<string, string>("cid", googleClientId),
-                    new KeyValuePair<string, string>("t", "event"),
-                    new KeyValuePair<string, string>("ec", category),
-                    new KeyValuePair<string, string>("ea", action)
+                    new KeyValuePair<string, string>("t",  Enum.GetName(typeof(AnalyticsData.eAnalyticsType), AnalyticsData.AnalyticsType).ToString().ToLower()), //
+                   
                 };
-
-                if (label != null)
+                
+                switch (AnalyticsData.AnalyticsType)
                 {
-                    postData.Add(new KeyValuePair<string, string>("el", label));
-                }
+                    case AnalyticsData.eAnalyticsType.Event:
 
-                if (value != null)
-                {
-                    postData.Add(new KeyValuePair<string, string>("ev", value.ToString()));
-                }
+                        if (string.IsNullOrEmpty(AnalyticsData.Category))
+                            throw new ArgumentNullException(nameof(AnalyticsData.Category));
 
+                        if (string.IsNullOrEmpty(AnalyticsData.Name))
+                            throw new ArgumentNullException(nameof(AnalyticsData.Name));
+
+                        postData.Add(new KeyValuePair<string, string>("ec", AnalyticsData.Category));
+                        postData.Add(new KeyValuePair<string, string>("ea", AnalyticsData.Name));
+
+                        if (AnalyticsData.Label != null)
+                            postData.Add(new KeyValuePair<string, string>("el", AnalyticsData.Label));
+                        else
+                            postData.Add(new KeyValuePair<string, string>("el", $"Customer {CustomerID} - {CustomerName}"));//"{" + $"\"ID\": {CustomerID}" + $", \"Name\": \"{CustomerName}\"" + "}"));
+
+                        if (AnalyticsData.Value != null)
+                            postData.Add(new KeyValuePair<string, string>("ev", AnalyticsData.Value?.ToString()));
+
+                        break;
+                    case AnalyticsData.eAnalyticsType.PageView:
+                        //&dh=mydemo.com  |  Document hostname.
+                        //&dp =/ home     |  Page.
+                        //& dt = homepage | Title.
+                        postData.Add(new KeyValuePair<string, string>("dh", AnalyticsData.HostName));
+                        postData.Add(new KeyValuePair<string, string>("dp", $"{AnalyticsData.PageName}?id={CustomerID}&name={CustomerName}"));
+                        string divider = string.IsNullOrEmpty(AnalyticsData.Title) ? "" : " | ";
+                        postData.Add(new KeyValuePair<string, string>("dt",  $"{AnalyticsData.Title}{divider}Customer {CustomerID} - {CustomerName}"));
+                        break;
+
+                }
 
                 return await httpClient.PostAsync(endpoint, new FormUrlEncodedContent(postData)).ConfigureAwait(false);
             }
