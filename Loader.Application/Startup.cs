@@ -19,6 +19,7 @@ using Loader.Service.Services;
 using Loader.Service.Services.Analytics;
 using Loader.Application.Middleware.Log;
 using Loader.Application.Middleware.Request;
+using Loader.Service.Services.License;
 
 namespace Loader.Application
 {
@@ -39,7 +40,8 @@ namespace Loader.Application
         public void ConfigureServices(IServiceCollection services)
         {
             GlobalConfiguration.Configuration.UseLogProvider(new Loader.Application.Middleware.Log.ElmahLogProvider());
-
+            GlobalJobFilters.Filters.Add(new HangfireElmhaJobExceptionFilter());
+            
             services.AddHangfire(configuration => configuration
                 .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
                 .UseSimpleAssemblyNameTypeSerializer()
@@ -49,15 +51,6 @@ namespace Loader.Application
             //Configurando o Log do hangfire para elmah
 
             services.AddHangfireServer();
-            services.AddTransient<Service.Services.UpdateService, Service.Services.UpdateService>(serviceProvider =>
-            {
-                return new Service.Services.UpdateService(new Infra.Data.Repository.UpdateRepository(_env.ContentRootPath));
-            });
-
-            services.AddTransient<Service.Services.Analytics.BaseAnalyticsService, Service.Services.Analytics.BaseAnalyticsService>(serviceProvider =>
-            {
-                return new Service.Services.Analytics.GoogleAnalyticsService(Configuration["Analytics:ID"], Configuration["Customer:Name"], Configuration["Customer:ID"]);
-            });
 
             services.AddHealthChecks();
             services.AddHealthChecksUI();
@@ -69,8 +62,6 @@ namespace Loader.Application
                 options.Notifiers.Add(new Middleware.Log.ElmahLogAnalyticsNotifier(new Service.Services.Analytics.GoogleAnalyticsService(Configuration["Analytics:ID"], Configuration["Customer:Name"], Configuration["Customer:ID"])));
             });
 
-            
-
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
             // In production, the React files will be served from this directory
@@ -80,16 +71,39 @@ namespace Loader.Application
             });
 
             // Register the Swagger generator, defining 1 or more Swagger documents
-                services.AddSwaggerGen(c =>
-                {
-                    c.SwaggerDoc("v1", new Swashbuckle.AspNetCore.Swagger.Info() { Title = "Loader Swagger API", Version = "v1" });
-                });
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new Swashbuckle.AspNetCore.Swagger.Info() { Title = "Loader Swagger API", Version = "v1" });
+            });
+
+            services.AddTransient<Service.Services.UpdateService, Service.Services.UpdateService>(serviceProvider =>
+            {
+                return new Service.Services.UpdateService(new Infra.Data.Repository.UpdateRepository(_env.ContentRootPath));
+            });
+
+            services.AddSingleton<Service.Services.Analytics.BaseAnalyticsService, Service.Services.Analytics.BaseAnalyticsService>(serviceProvider =>
+            {
+                return new Service.Services.Analytics.GoogleAnalyticsService(Configuration["Analytics:ID"], Configuration["Customer:Name"], Configuration["Customer:ID"]);
+            });
+
+            services.AddSingleton<Service.Services.License.BaseLicenseService, Service.Services.License.BaseLicenseService>(serviceProvider =>
+            {
+                var analyticsService = serviceProvider.GetService<Service.Services.Analytics.BaseAnalyticsService>();
+                var updateService = serviceProvider.GetService<Service.Services.UpdateService>();
+
+                if (Convert.ToBoolean(Configuration["Customer:CheckLicense"]))
+                    return new Service.Services.License.BaseLicenseService(analyticsService, updateService, Configuration["Customer:ID"], Configuration["Customer:Name"]);
+
+                return new Service.Services.License.MVLicenseService(analyticsService, updateService, Configuration["Customer:ID"], Configuration["Customer:Name"]);
+
+            });
 
 
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IBackgroundJobClient backgroundJobs, IRecurringJobManager recurringJobManager, ILoggerFactory LoggerFactory, IHostingEnvironment env, BaseAnalyticsService AnalyticsService)
+        public void Configure(IApplicationBuilder app, IBackgroundJobClient backgroundJobs, IRecurringJobManager recurringJobManager,
+            ILoggerFactory LoggerFactory, IHostingEnvironment env, BaseAnalyticsService AnalyticsService, BaseLicenseService LicenseService)
         {
             
 
@@ -123,7 +137,7 @@ namespace Loader.Application
                 
             });
 
-            app.UseMiddleware<RequestResponseLoggingMiddleware>(AnalyticsService);
+            //app.UseMiddleware<RequestResponseLoggingMiddleware>(AnalyticsService);
 
             app.UseMvc(routes =>
             {
@@ -141,10 +155,20 @@ namespace Loader.Application
                     spa.UseReactDevelopmentServer(npmScript: "start");
                 }
             });
+            this.RegisterHangfireTasks();
+           /* recurringJobManager.AddOrUpdate("LICENSE-CHECK", () =>
+                LicenseService.SilentValidadeLicense()
+            , "10 * * * * *"); 10 seconds Cron.MinuteInterval(1));*/
+        }
 
-            recurringJobManager.AddOrUpdate("update", () => 
-                Console.WriteLine()
-            , Cron.Hourly);
+        private void RegisterHangfireTasks()
+        {
+            RecurringJob.AddOrUpdate<BaseLicenseService>(
+            "LICENSE-CHECK",
+            s =>  s.SilentValidadeLicense(),
+           //"*/10 * * * * *",
+            Cron.Hourly,
+            TimeZoneInfo.Local);
         }
     }
 }

@@ -48,25 +48,57 @@ namespace Loader.Service.Services
             };
         }
 
+        public Version GetCurrentAssemblyVersion(UpdateInstruction UpdateInstruction)
+        {
+            return AssemblyManager.GetAssemblyVersion(UpdateInstruction.MainAssembly);
+        }
+
+        public string DoScheduledUpdate(UpdateInstruction UpdateInstruction)
+        {
+            string CurrentUpdateJobQueue = this._UpdateRepository.GetQueuePositionFromUpdate(UpdateInstruction);
+
+            if(string.IsNullOrEmpty(CurrentUpdateJobQueue))
+                CurrentUpdateJobQueue = BackgroundJob.Enqueue(() => this.DoUpdate(UpdateInstruction));
+
+            _UpdateRepository.WriteJobStatus(UpdateInstruction, CurrentUpdateJobQueue);
+            return CurrentUpdateJobQueue;
+        }
+
         [AutomaticRetry(Attempts = 0)]
         public UpdateResult DoUpdate(UpdateInstruction UpdateInstruction)
         {
-            UpdateEntry updateEntry = this.HasUpdate(UpdateInstruction);
-            if (!updateEntry.HasUpdate)
+            var updateResultReturn = new UpdateResult()
             {
-                var updateResultReturn = new UpdateResult()
-                {
-                    ID = new Guid(),
-                    IsSuccess = false,
-                    //Message = "No update found. Nothing to update!",
-                    UpdateInstructionID = UpdateInstruction.ID
-                };
-                updateResultReturn.AddMessage("No update found. Nothing to update!", UpdateResultMessage.eMessageType.INFORMATION);
-                this._UpdateRepository.WriteUpdateInstructionResult(updateResultReturn);
-                return updateResultReturn;
-            }    
+                ID = new Guid(),
+                IsSuccess = false,
+                //Message = "No update found. Nothing to update!",
+                UpdateInstructionID = UpdateInstruction.ID
+            };
 
-            return ExecuteUpdate(updateEntry);
+            try
+            {
+                UpdateEntry updateEntry = this.HasUpdate(UpdateInstruction);
+                if (updateEntry.HasUpdate)
+                {
+                    var updateResult = ExecuteUpdate(updateEntry);
+                }
+                else
+                {
+                    updateResultReturn.AddMessage("No update found. Nothing to update!", UpdateResultMessage.eMessageType.INFORMATION);
+                    this._UpdateRepository.WriteUpdateInstructionResult(updateResultReturn);
+                    
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            finally
+            {
+                _UpdateRepository.WriteJobStatus(UpdateInstruction, "", true);
+            }
+
+            return updateResultReturn;
         }
 
         public UpdateResult ExecuteUpdate(UpdateEntry UpdateEntry)
@@ -184,8 +216,19 @@ namespace Loader.Service.Services
 
         }
 
-        
 
+        public string DoScheduledRollback(UpdateInstruction UpdateInstruction, UpdateBackupEntry UpdateBackupEntry)
+        {
+            string CurrentUpdateJobQueue = this._UpdateRepository.GetQueuePositionFromUpdate(UpdateInstruction);
+
+            if (string.IsNullOrEmpty(CurrentUpdateJobQueue))
+                CurrentUpdateJobQueue = BackgroundJob.Enqueue(() => this.DoRollback(UpdateInstruction, UpdateBackupEntry));
+
+            _UpdateRepository.WriteJobStatus(UpdateInstruction, CurrentUpdateJobQueue);
+            return CurrentUpdateJobQueue;
+        }
+
+        [AutomaticRetry(Attempts = 0)]
         public UpdateResult DoRollback(UpdateInstruction UpdateInstruction, UpdateBackupEntry UpdateBackupEntry)
         {
             //1 - Rodar linha de comando antes do rollback
