@@ -31,24 +31,18 @@ namespace Loader.Service.Services.License
                     ProductVersion = this._UpdateService.GetCurrentAssemblyVersion(updateInstruction).ToString()
                 };
 
-                var analyticsData = new Domain.Models.Analytics.AnalyticsData()
-                {
-                    //Name = "License Validation",
-                    Category = "Loader.Service.Services.License.MVLicenseService.SilentValidadeLicense",
-                    AnalyticsType = Domain.Models.Analytics.AnalyticsData.eAnalyticsType.Event,
-                    Value = 0,
-                };
+                string ValidationResult = string.Empty;
 
                 if (!this.HasPermissionToUse(licenseData))
                 {
-                    analyticsData.Name = $"Not authorized to use {updateInstruction.Name} - {_UpdateService.GetCurrentAssemblyVersion(updateInstruction)}";
+                    ValidationResult = $"Not authorized to use '{updateInstruction.Name}' - '{_UpdateService.GetCurrentAssemblyVersion(updateInstruction)}'";
                 }
                 else
                 {
-                    analyticsData.Name = $"Authorized to use {updateInstruction.Name} - {_UpdateService.GetCurrentAssemblyVersion(updateInstruction)}";
+                    ValidationResult = $"Authorized to use '{updateInstruction.Name}' - '{_UpdateService.GetCurrentAssemblyVersion(updateInstruction)}'";
                 }
 
-                await this._AnalyticsService.Send(analyticsData);
+                await this._AnalyticsService.SendInformation("MVLicenseService.SilentValidadeLicense", ValidationResult);
             }
 
             

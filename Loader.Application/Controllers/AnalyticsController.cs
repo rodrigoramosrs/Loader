@@ -26,9 +26,9 @@ namespace Loader.Application.Controllers
         }
 
         [HttpPost("[action]")]
-        public object Send(AnalyticsData AnalyticsData)
+        public object Send(AnalyticsInformationData AnalyticsData)
         {
-            return this._AnalyticsService.Send(AnalyticsData).Result;
+            return this._AnalyticsService.SendInformation($"{AnalyticsData.Category}.{AnalyticsData.ActionName}" , AnalyticsData.Description).Result;
         }
     }
 }

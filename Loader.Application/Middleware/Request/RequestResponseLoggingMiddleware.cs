@@ -90,15 +90,8 @@ namespace Loader.Application.Middleware.Request
 
         private async Task<bool> DoAnalytics(string HostName, string PageName, string Title)
         {
-            var resultData = await _AnalyticsService.Send(new Domain.Models.Analytics.AnalyticsData()
-            {
-                AnalyticsType = Domain.Models.Analytics.AnalyticsData.eAnalyticsType.PageView,
-                
-                HostName = HostName,
-                PageName = PageName,
-                Title = Title
-            });
-
+            var resultData = await _AnalyticsService.SendPageView(HostName, PageName, Title);
+            
             return resultData;
         }
     }

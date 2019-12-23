@@ -20,13 +20,16 @@ namespace Loader.Application.Middleware.Log
 
         public void Notify(Error error)
         {
-            this._AnalyticsService.Send(new Domain.Models.Analytics.AnalyticsData()
+            this._AnalyticsService.SendException($"ElmahLogAnalyticsNotifier - {error.Message}", error.Exception);
+            
+
+            /* this._AnalyticsService.SendInformation(new Domain.Models.Analytics.AnalyticsInformationData()
             {
                 Name = error.ToString() + ".\r\n" + error.Exception.ToString(),
                 Category = "Loader.Application.Middleware.ElmahLogNotifier.Exception",
                 Description = error.ToString() + ".\r\n" + error.Exception.ToString()
             }
-            );
+            );*/
         }
     }
 }

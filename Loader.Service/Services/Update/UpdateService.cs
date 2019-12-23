@@ -18,9 +18,11 @@ namespace Loader.Service.Services
     public class UpdateService
     {
         private readonly IUpdateRepository _UpdateRepository;
-        public UpdateService(IUpdateRepository updateRepository)
+        private readonly Analytics.BaseAnalyticsService _AnalyticsService;
+        public UpdateService(IUpdateRepository updateRepository, Analytics.BaseAnalyticsService AnalyticsService)
         {
             _UpdateRepository = updateRepository;
+            _AnalyticsService = AnalyticsService;
         }
 
         public UpdateEntry HasUpdate(UpdateInstruction UpdateInstruction)
@@ -80,7 +82,7 @@ namespace Loader.Service.Services
                 UpdateEntry updateEntry = this.HasUpdate(UpdateInstruction);
                 if (updateEntry.HasUpdate)
                 {
-                    var updateResult = ExecuteUpdate(updateEntry);
+                    updateResultReturn = ExecuteUpdate(updateEntry);
                 }
                 else
                 {
@@ -88,6 +90,25 @@ namespace Loader.Service.Services
                     this._UpdateRepository.WriteUpdateInstructionResult(updateResultReturn);
                     
                 }
+
+                if (updateEntry.HasUpdate)
+                {
+                    if (!updateResultReturn.IsSuccess)
+                    {
+                        _AnalyticsService.SendInformation("UpdateService.DoUpdate.Results",
+                            $"Failed to update '{updateEntry.ProductName}' from '{updateEntry.CurrentVersion}' to '{updateEntry.CurrentVersion}'.\r\nSee details:\r\n\r\n{ JsonConvert.SerializeObject(updateResultReturn.Messages,Formatting.Indented)}" );
+                    }
+                    else
+                    {
+                        _AnalyticsService.SendInformation("UpdateService.DoUpdate.Results", $"Updated '{updateEntry.ProductName}' from '{updateEntry.CurrentVersion}' to '{updateEntry.NewVersion}'");
+                    }
+                }
+                else
+                {
+                    _AnalyticsService.SendInformation("UpdateService.DoUpdate.Results", $"No update found to '{updateEntry.ProductName}' with version '{updateEntry.CurrentVersion}' . Nothing to update!");
+                }
+
+                
             }
             catch (Exception ex)
             {
@@ -98,6 +119,7 @@ namespace Loader.Service.Services
                 _UpdateRepository.WriteJobStatus(UpdateInstruction, "", true);
             }
 
+            
             return updateResultReturn;
         }
 
@@ -110,8 +132,10 @@ namespace Loader.Service.Services
             //5 - Valida os arquivos e diretórios que devem permanecer e faço a copia para o novo diretório após a atualização
             //6 - Rodar linha de comano pós update
             //7 - Validando a versão após a atualização para verificar se está correta.
+
             var updateResultReturn = new UpdateResult()
             {
+                IsSuccess = false,
                 ID = Guid.NewGuid(),
                 UpdateInstructionID = UpdateEntry.UpdateInstruction.ID
             };
@@ -207,9 +231,13 @@ namespace Loader.Service.Services
                    .AddMessage($"Error updating '{UpdateEntry.UpdateInstruction.Name}' from '{UpdateEntry.CurrentVersion}' to '{UpdateEntry.NewVersion}' see details.\r\nDetails: " + ex.ToString(), UpdateResultMessage.eMessageType.ERROR);
                 updateResultReturn.IsSuccess = false;
             }
+            finally
+            {
+                this._UpdateRepository.WriteUpdateInstructionResult(updateResultReturn);
+            }
             
 
-            this._UpdateRepository.WriteUpdateInstructionResult(updateResultReturn);
+            
 
             return updateResultReturn;
 

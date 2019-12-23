@@ -54,12 +54,13 @@ namespace Loader.Application
 
             services.AddHealthChecks();
             services.AddHealthChecksUI();
+            
             services.AddElmah<XmlFileErrorLog>(options => 
             {
                 options.LogPath = @".\log";
                 options.Path = "log";
                 options.ApplicationName = "Loader.Application";
-                options.Notifiers.Add(new Middleware.Log.ElmahLogAnalyticsNotifier(new Service.Services.Analytics.GoogleAnalyticsService(Configuration["Analytics:ID"], Configuration["Customer:Name"], Configuration["Customer:ID"])));
+                options.Notifiers.Add(new Middleware.Log.ElmahLogAnalyticsNotifier(new Service.Services.Analytics.GoogleAnalyticsService(Configuration["Analytics:ID"], Configuration["Analytics:ExceptionID"], Configuration["Customer:Name"], Configuration["Customer:ID"])));
             });
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
@@ -78,12 +79,13 @@ namespace Loader.Application
 
             services.AddTransient<Service.Services.UpdateService, Service.Services.UpdateService>(serviceProvider =>
             {
-                return new Service.Services.UpdateService(new Infra.Data.Repository.UpdateRepository(_env.ContentRootPath));
+                var analyticsService = serviceProvider.GetService<Service.Services.Analytics.BaseAnalyticsService>();
+                return new Service.Services.UpdateService(new Infra.Data.Repository.UpdateRepository(_env.ContentRootPath), analyticsService);
             });
 
             services.AddSingleton<Service.Services.Analytics.BaseAnalyticsService, Service.Services.Analytics.BaseAnalyticsService>(serviceProvider =>
             {
-                return new Service.Services.Analytics.GoogleAnalyticsService(Configuration["Analytics:ID"], Configuration["Customer:Name"], Configuration["Customer:ID"]);
+                return new Service.Services.Analytics.GoogleAnalyticsService(Configuration["Analytics:ID"], Configuration["Analytics:ExceptionID"], Configuration["Customer:Name"], Configuration["Customer:ID"]);
             });
 
             services.AddSingleton<Service.Services.License.BaseLicenseService, Service.Services.License.BaseLicenseService>(serviceProvider =>

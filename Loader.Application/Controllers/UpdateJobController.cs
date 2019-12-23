@@ -32,7 +32,7 @@ namespace Loader.Application.Controllers
         [HttpGet("[action]")]
         public object GetUpdateInstructionList()
         {
-            this.DoAnalytics("UpdateJobController", "GetUpdateInstructionList","", "GetUpdateInstructionList");
+            this.DoAnalytics("UpdateJobController", "GetUpdateInstructionList","", "Getting List of UpdateInstructions");
             return _UpdateService.GetUpdateInstructionList();
         }
         [HttpGet("[action]")]
@@ -96,8 +96,8 @@ namespace Loader.Application.Controllers
 
         private async void DoAnalytics(string Category, string Action, string Label, string Description)
         {
-            var modelData = new Domain.Models.Analytics.AnalyticsData() { Name = Description, Category = $"Loader.Application.{Category}.{Action}",  Description = Description };
-            Task.Run(() => this._AnalyticsService.Send(modelData) );
+            //var modelData = new Domain.Models.Analytics.AnalyticsInformationData() { ActionName = Description, Category = $"Loader.Application.{Category}.{Action}",  Description = Description };
+            Task.Run(() => this._AnalyticsService.SendInformation($"{Category}.{Action}", Description) );
         }
 
 
