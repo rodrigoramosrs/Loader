@@ -39,13 +39,13 @@ namespace Loader.Infra.Manager
             }*/
         }
 
-        public static bool Decompress(string SourceArchiveFileOrURL, string destinatinoDirectoryName)
+        public static bool Decompress(string SourceArchiveFileOrURL, string destinatinoDirectoryName, bool overwriteFiles = true)
         {
             string sourceFileName = SourceArchiveFileOrURL;
-            if (SourceArchiveFileOrURL.StartsWith("http"))
+            if (SourceArchiveFileOrURL.StartsWith("http") || SourceArchiveFileOrURL.StartsWith("ftp"))
                 sourceFileName = DownloadManager.DownloadTempData(SourceArchiveFileOrURL);
 
-            System.IO.Compression.ZipFile.ExtractToDirectory(sourceFileName, destinatinoDirectoryName);
+            System.IO.Compression.ZipFile.ExtractToDirectory(sourceFileName, destinatinoDirectoryName, overwriteFiles);
             return true;
             /*
             FileInfo fileToDecompress = new FileInfo(ZipFileName);

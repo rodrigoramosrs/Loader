@@ -115,5 +115,15 @@ namespace Loader.Infra.Data.Repository
 
             return File.ReadAllText(Path.Combine(_JobStatusPath, instruction.ID.ToString()));
         }
+
+        public bool ClearAllJobStatus()
+        {
+            if (!Directory.Exists(_JobStatusPath)) Directory.CreateDirectory(_JobStatusPath);
+
+            foreach (var item in Directory.GetFiles(_JobStatusPath, "*"))
+                File.Delete(item);
+
+            return true;
+        }
     }
 }

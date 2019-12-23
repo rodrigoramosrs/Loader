@@ -35,7 +35,7 @@ namespace Loader.Service.Services.License
 
                 if (!this.HasPermissionToUse(licenseData))
                 {
-                    ValidationResult = $"Not authorized to use '{updateInstruction.Name}' - '{_UpdateService.GetCurrentAssemblyVersion(updateInstruction)}'";
+                    ValidationResult = $"Unauthorized to use '{updateInstruction.Name}' - '{_UpdateService.GetCurrentAssemblyVersion(updateInstruction)}'";
                 }
                 else
                 {

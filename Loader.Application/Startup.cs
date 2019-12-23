@@ -105,7 +105,7 @@ namespace Loader.Application
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IBackgroundJobClient backgroundJobs, IRecurringJobManager recurringJobManager,
-            ILoggerFactory LoggerFactory, IHostingEnvironment env, BaseAnalyticsService AnalyticsService, BaseLicenseService LicenseService)
+            ILoggerFactory LoggerFactory, IHostingEnvironment env, BaseAnalyticsService AnalyticsService, BaseLicenseService LicenseService, UpdateService UpdateService)
         {
             
 
@@ -157,6 +157,10 @@ namespace Loader.Application
                     spa.UseReactDevelopmentServer(npmScript: "start");
                 }
             });
+
+            //Limpando todos os status anteriormente pendentes na inicialização
+            UpdateService.ClearAllJobStatus();
+
             this.RegisterHangfireTasks();
            /* recurringJobManager.AddOrUpdate("LICENSE-CHECK", () =>
                 LicenseService.SilentValidadeLicense()

@@ -21,6 +21,7 @@ namespace Loader.Domain.Interfaces
         string GetBackupFolderFromUpdateID(string ID);
 
         bool WriteJobStatus(UpdateInstruction instruction, string QueuePosition, bool HasFinished = false);
+        bool ClearAllJobStatus();
 
         string GetQueuePositionFromUpdate(UpdateInstruction instruction);
     }

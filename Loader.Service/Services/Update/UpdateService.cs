@@ -12,6 +12,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Loader.Service.Services
 {
@@ -69,6 +70,8 @@ namespace Loader.Service.Services
         [AutomaticRetry(Attempts = 0)]
         public UpdateResult DoUpdate(UpdateInstruction UpdateInstruction)
         {
+            string AnalyticsMessageResult = "";
+
             var updateResultReturn = new UpdateResult()
             {
                 ID = new Guid(),
@@ -76,38 +79,26 @@ namespace Loader.Service.Services
                 //Message = "No update found. Nothing to update!",
                 UpdateInstructionID = UpdateInstruction.ID
             };
+            
 
             try
             {
                 UpdateEntry updateEntry = this.HasUpdate(UpdateInstruction);
+                string QueuePosition = _UpdateRepository.GetQueuePositionFromUpdate(UpdateInstruction);
+
                 if (updateEntry.HasUpdate)
                 {
                     updateResultReturn = ExecuteUpdate(updateEntry);
+
+                    AnalyticsMessageResult = !updateResultReturn.IsSuccess ? $"Job '{QueuePosition}' failed to update '{updateEntry.ProductName}' from '{updateEntry.CurrentVersion}' to '{updateEntry.CurrentVersion}'. Alepsed time is: {this.ConvertMillisecondsToTimeString(updateResultReturn.TimeSpentMilliseconds)}.\r\nSee details:\r\n\r\n{ JsonConvert.SerializeObject(updateResultReturn.Messages, Formatting.Indented)}"
+                    : AnalyticsMessageResult = $"Job '{QueuePosition}' updated '{updateEntry.ProductName}' from '{updateEntry.CurrentVersion}' to '{updateEntry.NewVersion}'. Alepsed time is: {this.ConvertMillisecondsToTimeString(updateResultReturn.TimeSpentMilliseconds)}.";
                 }
                 else
                 {
-                    updateResultReturn.AddMessage("No update found. Nothing to update!", UpdateResultMessage.eMessageType.INFORMATION);
-                    this._UpdateRepository.WriteUpdateInstructionResult(updateResultReturn);
-                    
-                }
+                    AnalyticsMessageResult =  $"Job '{QueuePosition}' not found to update for '{updateEntry.ProductName}' with version '{updateEntry.CurrentVersion}'. Nothing to update!";
+                    updateResultReturn.AddMessage(AnalyticsMessageResult, UpdateResultMessage.eMessageType.INFORMATION);
 
-                if (updateEntry.HasUpdate)
-                {
-                    if (!updateResultReturn.IsSuccess)
-                    {
-                        _AnalyticsService.SendInformation("UpdateService.DoUpdate.Results",
-                            $"Failed to update '{updateEntry.ProductName}' from '{updateEntry.CurrentVersion}' to '{updateEntry.CurrentVersion}'.\r\nSee details:\r\n\r\n{ JsonConvert.SerializeObject(updateResultReturn.Messages,Formatting.Indented)}" );
-                    }
-                    else
-                    {
-                        _AnalyticsService.SendInformation("UpdateService.DoUpdate.Results", $"Updated '{updateEntry.ProductName}' from '{updateEntry.CurrentVersion}' to '{updateEntry.NewVersion}'");
-                    }
                 }
-                else
-                {
-                    _AnalyticsService.SendInformation("UpdateService.DoUpdate.Results", $"No update found to '{updateEntry.ProductName}' with version '{updateEntry.CurrentVersion}' . Nothing to update!");
-                }
-
                 
             }
             catch (Exception ex)
@@ -119,7 +110,8 @@ namespace Loader.Service.Services
                 _UpdateRepository.WriteJobStatus(UpdateInstruction, "", true);
             }
 
-            
+            this._UpdateRepository.WriteUpdateInstructionResult(updateResultReturn);
+            this.SendAnalyticsData("UpdateService.DoUpdate.Results", AnalyticsMessageResult);
             return updateResultReturn;
         }
 
@@ -218,7 +210,7 @@ namespace Loader.Service.Services
 
 
                 updateResultReturn
-                    .AddMessage($"Updated '{UpdateEntry.UpdateInstruction.Name}' from '{UpdateEntry.CurrentVersion}' to '{UpdateEntry.NewVersion}'. Alepsed time: {alepsedTime}",
+                    .AddMessage($"Updated '{UpdateEntry.UpdateInstruction.Name}' from '{UpdateEntry.CurrentVersion}' to '{UpdateEntry.NewVersion}'. Alepsed time: {this.ConvertMillisecondsToTimeString(updateResultReturn.TimeSpentMilliseconds)}",
                                 updateResultReturn.IsSuccess ?
                                 (updateResultReturn.Messages.Where(x => x.Type == UpdateResultMessage.eMessageType.ERROR).Count() <= 0 ? UpdateResultMessage.eMessageType.SUCCESS : UpdateResultMessage.eMessageType.WARNING) : UpdateResultMessage.eMessageType.ERROR);
             }
@@ -244,7 +236,6 @@ namespace Loader.Service.Services
 
         }
 
-
         public string DoScheduledRollback(UpdateInstruction UpdateInstruction, UpdateBackupEntry UpdateBackupEntry)
         {
             string CurrentUpdateJobQueue = this._UpdateRepository.GetQueuePositionFromUpdate(UpdateInstruction);
@@ -259,6 +250,49 @@ namespace Loader.Service.Services
         [AutomaticRetry(Attempts = 0)]
         public UpdateResult DoRollback(UpdateInstruction UpdateInstruction, UpdateBackupEntry UpdateBackupEntry)
         {
+            string AnalyticsMessageResult = "";
+            var updateResultReturn = new UpdateResult()
+            {
+                ID = new Guid(),
+                IsSuccess = false,
+                //Message = "No update found. Nothing to update!",
+                UpdateInstructionID = UpdateInstruction.ID
+            };
+
+            try
+            {
+                Version CurrentVersionBeforeRollback = this.GetCurrentAssemblyVersion(UpdateInstruction);
+                string QueuePosition = _UpdateRepository.GetQueuePositionFromUpdate(UpdateInstruction);
+
+                updateResultReturn = ExecuteRollback(UpdateInstruction, UpdateBackupEntry);
+
+                AnalyticsMessageResult = !updateResultReturn.IsSuccess ? $"Job '{QueuePosition}' Failed to rollback '{UpdateInstruction.Name}' from '{CurrentVersionBeforeRollback}' to '{UpdateBackupEntry.BackupVersion}'. Alepsed time is: {this.ConvertMillisecondsToTimeString(updateResultReturn.TimeSpentMilliseconds)}.\r\nSee details:\r\n\r\n{ JsonConvert.SerializeObject(updateResultReturn.Messages, Formatting.Indented)}"
+                        : $"Job '{QueuePosition}' rollback success for product '{UpdateInstruction.Name}' from '{CurrentVersionBeforeRollback}' to '{UpdateBackupEntry.BackupVersion}'. Alepsed time is: {this.ConvertMillisecondsToTimeString(updateResultReturn.TimeSpentMilliseconds)}.";
+
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            finally
+            {
+                _UpdateRepository.WriteJobStatus(UpdateInstruction, "", true);
+            }
+
+            this.SendAnalyticsData("UpdateService.DoRollback.Results", AnalyticsMessageResult);
+            return updateResultReturn;
+
+
+        }
+
+        public bool ClearAllJobStatus()
+        {
+           return this._UpdateRepository.ClearAllJobStatus();
+        }
+
+        public UpdateResult ExecuteRollback(UpdateInstruction UpdateInstruction, UpdateBackupEntry UpdateBackupEntry)
+        {
+
             //1 - Rodar linha de comando antes do rollback
             //2 - Fazer backup do diretório antigo com prefixo da versão
             //3 - Renomear Diretório do backup para o diretório atual
@@ -303,22 +337,20 @@ namespace Loader.Service.Services
             stopWatchTimer.Stop();
             updateResultReturn.TimeSpentMilliseconds = stopWatchTimer.ElapsedMilliseconds;
 
-            string alepsedTime = string.Format("{0:D2}h:{1:D2}m:{2:D2}s:{3:D3}ms",
+            /*string alepsedTime = string.Format("{0:D2}h:{1:D2}m:{2:D2}s:{3:D3}ms",
                         stopWatchTimer.Elapsed.Hours,
                         stopWatchTimer.Elapsed.Minutes,
                         stopWatchTimer.Elapsed.Seconds,
-                        stopWatchTimer.Elapsed.Milliseconds);
+                        stopWatchTimer.Elapsed.Milliseconds);*/
 
             updateResultReturn
-                .AddMessage($"Rollback '{UpdateInstruction.Name}' from '{CurrentVersion}' to '{RollbackVersion}'. Alepsed time: {alepsedTime}",
+                .AddMessage($"Rollback '{UpdateInstruction.Name}' from '{CurrentVersion}' to '{RollbackVersion}'. Alepsed time: {this.ConvertMillisecondsToTimeString(updateResultReturn.TimeSpentMilliseconds)}",
                              updateResultReturn.IsSuccess ?
                             (updateResultReturn.Messages.Where(x => x.Type == UpdateResultMessage.eMessageType.ERROR).Count() <= 0 ? UpdateResultMessage.eMessageType.SUCCESS : UpdateResultMessage.eMessageType.WARNING) : UpdateResultMessage.eMessageType.ERROR);
 
             this._UpdateRepository.WriteUpdateInstructionResult(updateResultReturn);
             return updateResultReturn;
         }
-
-        
 
         public List<UpdateInstruction> GetUpdateInstructionList()
         {
@@ -346,6 +378,22 @@ namespace Loader.Service.Services
             string BackupSufix = $"{UpdateIntructionID}_{UpdateID}_{version}_{DateTime.Now.ToString("yyyy-M-dd_HH-mm-ss")}";
 
             return  $"{WorkDirectory}_{BackupSufix}";
+        }
+        
+
+        private async void SendAnalyticsData(string ActionName, string Description)
+        {
+            Task.Run(() => _AnalyticsService.SendInformation(ActionName, Description));
+        }
+
+        private string ConvertMillisecondsToTimeString(long AlepsedTimeMiliseconds)
+        {
+            var timeSpan = TimeSpan.FromMilliseconds(AlepsedTimeMiliseconds);
+            return  string.Format("{0:D2}h:{1:D2}m:{2:D2}s:{3:D3}ms",
+                        timeSpan.Hours,
+                        timeSpan.Minutes,
+                        timeSpan.Seconds,
+                        timeSpan.Milliseconds);
         }
         
     }
