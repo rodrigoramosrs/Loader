@@ -175,6 +175,13 @@ namespace Loader.Application
            //"*/10 * * * * *",
             Cron.Hourly,
             TimeZoneInfo.Local);
+
+            RecurringJob.AddOrUpdate<UpdateService>(
+            "VERSION-CHECK",
+            s => s.DoSilentVersionValidation(),
+            //"*/10 * * * * *",
+            Cron.Hourly,
+            TimeZoneInfo.Local);
         }
     }
 }

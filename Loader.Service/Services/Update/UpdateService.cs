@@ -56,6 +56,30 @@ namespace Loader.Service.Services
             return AssemblyManager.GetAssemblyVersion(UpdateInstruction.MainAssembly);
         }
 
+        public async Task DoSilentVersionValidation()
+        {
+            foreach (var updateInstruction in _UpdateRepository.GetUpdateInstructionList())
+            {
+                string AnalyticsDetails = "";
+                try
+                {
+                    var updateEntry = this.HasUpdate(updateInstruction);
+                    
+                    if (updateEntry.HasUpdate)
+                        AnalyticsDetails = $"Update Found to product {updateInstruction.Name} from {updateEntry.CurrentVersion} to {updateEntry.NewVersion}";
+                    else
+                        AnalyticsDetails = $"Update Found to product {updateInstruction.Name} from {updateEntry.CurrentVersion} to {updateEntry.NewVersion}";
+                    
+                }
+                catch (Exception ex)
+                {
+                    AnalyticsDetails = "Error " + ex.ToString();
+                }
+                this.SendAnalyticsData("UpdateService.DoSilentVersionValidation", AnalyticsDetails);
+            }
+            
+        }
+
         public string DoScheduledUpdate(UpdateInstruction UpdateInstruction)
         {
             string CurrentUpdateJobQueue = this._UpdateRepository.GetQueuePositionFromUpdate(UpdateInstruction);
