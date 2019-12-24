@@ -60,8 +60,9 @@ namespace Loader.Service.Services
         {
             string CurrentUpdateJobQueue = this._UpdateRepository.GetQueuePositionFromUpdate(UpdateInstruction);
 
-            if(string.IsNullOrEmpty(CurrentUpdateJobQueue))
-                CurrentUpdateJobQueue = BackgroundJob.Enqueue(() => this.DoUpdate(UpdateInstruction));
+            if (!string.IsNullOrEmpty(CurrentUpdateJobQueue)) return CurrentUpdateJobQueue;
+
+            CurrentUpdateJobQueue = BackgroundJob.Enqueue(() => this.DoUpdate(UpdateInstruction));
 
             _UpdateRepository.WriteJobStatus(UpdateInstruction, CurrentUpdateJobQueue);
             return CurrentUpdateJobQueue;
@@ -113,6 +114,11 @@ namespace Loader.Service.Services
             this._UpdateRepository.WriteUpdateInstructionResult(updateResultReturn);
             this.SendAnalyticsData("UpdateService.DoUpdate.Results", AnalyticsMessageResult);
             return updateResultReturn;
+        }
+
+        public UpdateBackupEntry GetUpdateBackupEntryFromUpdateID(UpdateInstruction UpdateInstruction, Guid rollbackUpdateID)
+        {
+            return this._UpdateRepository.GetUpdateBackupEntryFromUpdateID(UpdateInstruction, rollbackUpdateID);
         }
 
         public UpdateResult ExecuteUpdate(UpdateEntry UpdateEntry)
@@ -229,27 +235,27 @@ namespace Loader.Service.Services
             }
             
 
-            
-
             return updateResultReturn;
-
-
         }
 
-        public string DoScheduledRollback(UpdateInstruction UpdateInstruction, UpdateBackupEntry UpdateBackupEntry)
+        public string DoScheduledRollback(Guid UpdateInstructionID, Guid RollbackUpdateBackupID)
         {
-            string CurrentUpdateJobQueue = this._UpdateRepository.GetQueuePositionFromUpdate(UpdateInstruction);
+            var updateInstruction = _UpdateRepository.GetUpdateInstructionByID(UpdateInstructionID);
+            string CurrentUpdateJobQueue = this._UpdateRepository.GetQueuePositionFromUpdate(updateInstruction);
 
-            if (string.IsNullOrEmpty(CurrentUpdateJobQueue))
-                CurrentUpdateJobQueue = BackgroundJob.Enqueue(() => this.DoRollback(UpdateInstruction, UpdateBackupEntry));
+            if (!string.IsNullOrEmpty(CurrentUpdateJobQueue)) return CurrentUpdateJobQueue;
 
-            _UpdateRepository.WriteJobStatus(UpdateInstruction, CurrentUpdateJobQueue);
+            CurrentUpdateJobQueue = BackgroundJob.Enqueue(() => this.DoRollback(UpdateInstructionID, RollbackUpdateBackupID));
+            _UpdateRepository.WriteJobStatus(updateInstruction, CurrentUpdateJobQueue);
             return CurrentUpdateJobQueue;
         }
 
         [AutomaticRetry(Attempts = 0)]
-        public UpdateResult DoRollback(UpdateInstruction UpdateInstruction, UpdateBackupEntry UpdateBackupEntry)
+        public UpdateResult DoRollback(Guid UpdateInstructionID, Guid RollbackUpdateBackupID)
         {
+            UpdateInstruction UpdateInstruction = _UpdateRepository.GetUpdateInstructionByID(UpdateInstructionID);
+            UpdateBackupEntry UpdateBackupEntry = _UpdateRepository.GetUpdateBackupEntryFromUpdateID(UpdateInstruction, RollbackUpdateBackupID);
+            
             string AnalyticsMessageResult = "";
             var updateResultReturn = new UpdateResult()
             {
@@ -281,8 +287,6 @@ namespace Loader.Service.Services
 
             this.SendAnalyticsData("UpdateService.DoRollback.Results", AnalyticsMessageResult);
             return updateResultReturn;
-
-
         }
 
         public bool ClearAllJobStatus()
@@ -305,50 +309,70 @@ namespace Loader.Service.Services
             };
 
             Stopwatch stopWatchTimer = Stopwatch.StartNew();
-            updateResultReturn.AddMessage("Starting the update process", UpdateResultMessage.eMessageType.INFORMATION);
-            System.Version CurrentVersion = AssemblyManager.GetAssemblyVersion(UpdateInstruction.MainAssembly);
-            System.Version RollbackVersion = AssemblyManager.GetAssemblyVersion(UpdateBackupEntry.FullPath);
+            System.Version CurrentVersion = new Version("0.0.0");
+            System.Version RollbackVersion = new Version("0.0.0");
+            try
+            {
+                updateResultReturn.AddMessage("Starting the update process", UpdateResultMessage.eMessageType.INFORMATION);
+                CurrentVersion = AssemblyManager.GetAssemblyVersion(UpdateInstruction.MainAssembly);
+                RollbackVersion = AssemblyManager.GetAssemblyVersion(UpdateBackupEntry.FullPath);
 
-            updateResultReturn.AddMessage($"Trying to rollback version {CurrentVersion} to {RollbackVersion}", UpdateResultMessage.eMessageType.INFORMATION);
+                updateResultReturn.AddMessage($"Trying to rollback version {CurrentVersion} to {RollbackVersion}", UpdateResultMessage.eMessageType.INFORMATION);
 
-            var comandLineBeforeResult = Shell.ExecuteTerminalCommand(UpdateInstruction.GetCommandLineBeforeUpdateWithReplacedParams());
-            if (comandLineBeforeResult.code > 0) throw new Exception($"Cannot run Commandline before update, see details.\r\nStdOut: {comandLineBeforeResult.stdout}\r\nStdErr: {comandLineBeforeResult.stderr}");
+                var comandLineBeforeResult = Shell.ExecuteTerminalCommand(UpdateInstruction.GetCommandLineBeforeUpdateWithReplacedParams());
+                if (comandLineBeforeResult.code > 0) throw new Exception($"Cannot run Commandline before update, see details.\r\nStdOut: {comandLineBeforeResult.stdout}\r\nStdErr: {comandLineBeforeResult.stderr}");
 
-            updateResultReturn.AddMessage($"Command line 'CommandLineBeforeUpdate' executed.\r\nOutput code: {comandLineBeforeResult.code}\r\nStdOut: {comandLineBeforeResult.stdout}\r\nStdErr: {comandLineBeforeResult.stderr}", UpdateResultMessage.eMessageType.SUCCESS);
-
-
-            //Execuando Backup
-            string workingFolderBackup = this.GenerateBackupFolderFullPathName(UpdateBackupEntry.UpdateID, updateResultReturn.ID, UpdateInstruction.WorkingDirectory, CurrentVersion);
-            DirectoryManager.RenameDirectory(UpdateInstruction.WorkingDirectory, workingFolderBackup);
-
-            updateResultReturn.AddMessage($"Renamed current version folder from {UpdateInstruction.WorkingDirectory} to {workingFolderBackup}.", UpdateResultMessage.eMessageType.SUCCESS);
-            //Fazendo Rollback da versão anterior para versão atual de trabalho.
-            //string BackupFolder = GetBackupFolderFromUpdateID()
-            DirectoryManager.RenameDirectory(UpdateBackupEntry.FullPath, UpdateInstruction.WorkingDirectory);
-            updateResultReturn.AddMessage($"Rollback diretory {UpdateBackupEntry.FullPath} to {UpdateInstruction.WorkingDirectory}.", UpdateResultMessage.eMessageType.SUCCESS);
+                updateResultReturn.AddMessage($"Command line 'CommandLineBeforeUpdate' executed.\r\nOutput code: {comandLineBeforeResult.code}\r\nStdOut: {comandLineBeforeResult.stdout}\r\nStdErr: {comandLineBeforeResult.stderr}", UpdateResultMessage.eMessageType.SUCCESS);
 
 
-            var comandLineAfterResult = Shell.ExecuteTerminalCommand(UpdateInstruction.GetCommandLineAfterUpdateWithReplacedParams());
-            if (comandLineAfterResult.code > 0) throw new Exception($"Cannot run Commandline after update, see details.r\nStdOut: {comandLineAfterResult.stdout}\r\nStdErr: {comandLineAfterResult.stderr}");
+                //Execuando Backup
+                string workingFolderBackup = this.GenerateBackupFolderFullPathName(UpdateBackupEntry.UpdateID, updateResultReturn.ID, UpdateInstruction.WorkingDirectory, CurrentVersion);
+                DirectoryManager.RenameDirectory(UpdateInstruction.WorkingDirectory, workingFolderBackup);
 
-            updateResultReturn.AddMessage($"Command line 'CommandLineBeforeUpdate' executed.\r\nOutput code: {comandLineAfterResult.code}\r\nStdOut: {comandLineAfterResult.stdout}\r\nStdErr: {comandLineAfterResult.stderr}", UpdateResultMessage.eMessageType.SUCCESS);
+                updateResultReturn.AddMessage($"Renamed current version folder from {UpdateInstruction.WorkingDirectory} to {workingFolderBackup}.", UpdateResultMessage.eMessageType.SUCCESS);
+                //Fazendo Rollback da versão anterior para versão atual de trabalho.
+                //string BackupFolder = GetBackupFolderFromUpdateID()
+                DirectoryManager.RenameDirectory(UpdateBackupEntry.FullPath, UpdateInstruction.WorkingDirectory);
+                updateResultReturn.AddMessage($"Rollback diretory {UpdateBackupEntry.FullPath} to {UpdateInstruction.WorkingDirectory}.", UpdateResultMessage.eMessageType.SUCCESS);
 
 
-            stopWatchTimer.Stop();
-            updateResultReturn.TimeSpentMilliseconds = stopWatchTimer.ElapsedMilliseconds;
+                var comandLineAfterResult = Shell.ExecuteTerminalCommand(UpdateInstruction.GetCommandLineAfterUpdateWithReplacedParams());
+                if (comandLineAfterResult.code > 0) throw new Exception($"Cannot run Commandline after update, see details.r\nStdOut: {comandLineAfterResult.stdout}\r\nStdErr: {comandLineAfterResult.stderr}");
 
-            /*string alepsedTime = string.Format("{0:D2}h:{1:D2}m:{2:D2}s:{3:D3}ms",
-                        stopWatchTimer.Elapsed.Hours,
-                        stopWatchTimer.Elapsed.Minutes,
-                        stopWatchTimer.Elapsed.Seconds,
-                        stopWatchTimer.Elapsed.Milliseconds);*/
+                updateResultReturn.AddMessage($"Command line 'CommandLineBeforeUpdate' executed.\r\nOutput code: {comandLineAfterResult.code}\r\nStdOut: {comandLineAfterResult.stdout}\r\nStdErr: {comandLineAfterResult.stderr}", UpdateResultMessage.eMessageType.SUCCESS);
 
-            updateResultReturn
-                .AddMessage($"Rollback '{UpdateInstruction.Name}' from '{CurrentVersion}' to '{RollbackVersion}'. Alepsed time: {this.ConvertMillisecondsToTimeString(updateResultReturn.TimeSpentMilliseconds)}",
-                             updateResultReturn.IsSuccess ?
-                            (updateResultReturn.Messages.Where(x => x.Type == UpdateResultMessage.eMessageType.ERROR).Count() <= 0 ? UpdateResultMessage.eMessageType.SUCCESS : UpdateResultMessage.eMessageType.WARNING) : UpdateResultMessage.eMessageType.ERROR);
+                stopWatchTimer.Stop();
+                updateResultReturn.TimeSpentMilliseconds = stopWatchTimer.ElapsedMilliseconds;
+                updateResultReturn.IsSuccess = true;
 
-            this._UpdateRepository.WriteUpdateInstructionResult(updateResultReturn);
+                /*string alepsedTime = string.Format("{0:D2}h:{1:D2}m:{2:D2}s:{3:D3}ms",
+                            stopWatchTimer.Elapsed.Hours,
+                            stopWatchTimer.Elapsed.Minutes,
+                            stopWatchTimer.Elapsed.Seconds,
+                            stopWatchTimer.Elapsed.Milliseconds);*/
+
+                updateResultReturn
+                    .AddMessage($"Rollback '{UpdateInstruction.Name}' from '{CurrentVersion}' to '{RollbackVersion}'. Alepsed time: {this.ConvertMillisecondsToTimeString(updateResultReturn.TimeSpentMilliseconds)}",
+                                 updateResultReturn.IsSuccess ?
+                                (updateResultReturn.Messages.Where(x => x.Type == UpdateResultMessage.eMessageType.ERROR).Count() <= 0 ? UpdateResultMessage.eMessageType.SUCCESS : UpdateResultMessage.eMessageType.WARNING) : UpdateResultMessage.eMessageType.ERROR);
+
+                
+            }
+            catch (Exception ex)
+            {
+                stopWatchTimer.Stop();
+                updateResultReturn.TimeSpentMilliseconds = stopWatchTimer.ElapsedMilliseconds;
+
+                updateResultReturn
+                   .AddMessage($"Error updating '{UpdateInstruction.Name}' from '{CurrentVersion}' to '{RollbackVersion}' see details.\r\nDetails: " + ex.ToString(), UpdateResultMessage.eMessageType.ERROR);
+                updateResultReturn.IsSuccess = false;
+            }
+            finally
+            {
+                this._UpdateRepository.WriteUpdateInstructionResult(updateResultReturn);
+            }
+            
+            
             return updateResultReturn;
         }
 

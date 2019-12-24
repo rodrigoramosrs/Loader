@@ -16,6 +16,8 @@ namespace Loader.Domain.Interfaces
 
         List<UpdateBackupEntry> GetUpdateBackupEntryList(UpdateInstruction UpdateInstruction);
 
+        UpdateBackupEntry GetUpdateBackupEntryFromUpdateID(UpdateInstruction UpdateInstruction, Guid rollbackUpdateID);
+
         bool WriteUpdateInstructionResult(UpdateResult updateResult);
 
         string GetBackupFolderFromUpdateID(string ID);

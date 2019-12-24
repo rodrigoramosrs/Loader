@@ -14,6 +14,16 @@ namespace Loader.Application.Controllers
     [Route("api/[controller]")]
     public class UpdateJobController : Controller
     {
+        public class RollbackPayload
+        {
+            public Guid RollbackUpdateID { get; set; }
+            public Guid UpdateInstructionID { get; set; }
+        }
+
+        public class UpdatePayload
+        {
+            public Guid UpdateInstructionID { get; set; }
+        }
 
         private readonly Service.Services.UpdateService _UpdateService;
         private readonly Service.Services.Analytics.BaseAnalyticsService _AnalyticsService;
@@ -32,14 +42,14 @@ namespace Loader.Application.Controllers
         [HttpGet("[action]")]
         public object GetUpdateInstructionList()
         {
-            this.DoAnalytics("UpdateJobController", "GetUpdateInstructionList","", "Getting List of UpdateInstructions");
+            this.DoAnalytics("GetUpdateInstructionList", "Getting List of UpdateInstructions");
             return _UpdateService.GetUpdateInstructionList();
         }
         [HttpGet("[action]")]
         public object GetUpdateUpdateInstructionByID(string id)
         {
             var returnData = _UpdateService.GetUpdateInstructionByID(new Guid(id));
-            this.DoAnalytics("UpdateJobController", "GetUpdateUpdateInstructionByID", "", $"Getting update instruction for '{returnData.Name}'");
+            this.DoAnalytics("GetUpdateUpdateInstructionByID",  $"Getting update instruction for '{returnData.Name}'");
             return returnData;
         }
 
@@ -47,17 +57,17 @@ namespace Loader.Application.Controllers
         public object GetUpdateEntry(string id)
         {
             var instruction = _UpdateService.GetUpdateInstructionByID(new Guid(id));
-            this.DoAnalytics("UpdateJobController", "GetUpdateEntry", "", $"Getting update entry for '{instruction.Name}'");
+            this.DoAnalytics("GetUpdateEntry",  $"Getting update entry for '{instruction.Name}'");
             return _UpdateService.HasUpdate(instruction);
         }
 
         [HttpPost("[action]")]
-        public object DoUpdate([FromBody]UpdateInstruction updateInstruction)
+        public object DoUpdate([FromBody]UpdatePayload updatePayload)
         {
-            UpdateInstruction instruction = _UpdateService.GetUpdateInstructionByID(updateInstruction.ID);
+            UpdateInstruction instruction = _UpdateService.GetUpdateInstructionByID(updatePayload.UpdateInstructionID);
 
             string ReturnData = _UpdateService.DoScheduledUpdate(instruction); //_backgroundJobs.Enqueue(() => _UpdateService.DoUpdate(instruction));
-            this.DoAnalytics("UpdateJobController", "DoUpdate", "", $"Rolling update for '{instruction.Name}'. Schedule number is '{ReturnData}'");
+            this.DoAnalytics("DoUpdate",  $"Rolling update for '{instruction.Name}'. Schedule number is '{ReturnData}'");
 
             return ReturnData;
         }
@@ -68,7 +78,7 @@ namespace Loader.Application.Controllers
         {
             
             UpdateInstruction instruction = _UpdateService.GetUpdateInstructionByID(new Guid(id));
-            this.DoAnalytics("UpdateJobController", "GetUpdateBackupEntryList", "", $"Getting backup list for '{instruction.Name}'");
+            this.DoAnalytics("GetUpdateBackupEntryList",  $"Getting backup list for '{instruction.Name}'");
             return _UpdateService.GetUpdateBackupEntryList(instruction);
         }
 
@@ -76,26 +86,26 @@ namespace Loader.Application.Controllers
         public object GetUpdateHistory(string id)
         {
             var updateInstruction = _UpdateService.GetUpdateInstructionByID(new Guid(id));
-            this.DoAnalytics("UpdateJobController", "GetUpdateHistory", "", $"Getting update list for '{updateInstruction.Name}'");
+            this.DoAnalytics("GetUpdateHistory",  $"Getting update list for '{updateInstruction.Name}'");
             var resultData = _UpdateService.GetUpdateHistory(updateInstruction);
             return resultData;
         }
 
         [HttpPost("[action]")]
-        public object DoRollback([FromBody]UpdateInstruction updateInstruction)
+        public object DoRollback([FromBody]RollbackPayload rollbackPayload)
         {
-            UpdateInstruction instruction = _UpdateService.GetUpdateInstructionByID(updateInstruction.ID);
-            string ReturnData = _UpdateService.DoScheduledRollback(instruction, new UpdateBackupEntry("", ""));
+            UpdateInstruction instructionData = _UpdateService.GetUpdateInstructionByID(rollbackPayload.UpdateInstructionID);
+            string ReturnData = _UpdateService.DoScheduledRollback(rollbackPayload.UpdateInstructionID, rollbackPayload.RollbackUpdateID);
 
-            this.DoAnalytics("UpdateJobController", "GetUpdateHistory", "", $"Rolling back version of '{updateInstruction.Name}'. Schedule number is '{ReturnData}'");
+            this.DoAnalytics("DoRollback",  $"Rolling back version of '{instructionData.Name}'. Schedule number is '{ReturnData}'");
             return ReturnData;
             //return _backgroundJobs.Enqueue(() => _UpdateService.DoRollback(instruction, new UpdateBackupEntry("","")));
         }
 
 
-        private async void DoAnalytics(string Category, string Action, string Label, string Description)
+        private async void DoAnalytics(string Action, string Description)
         {
-            Task.Run(() => this._AnalyticsService.SendInformation($"{Category}.{Action}", Description) );
+            Task.Run(() => this._AnalyticsService.SendInformation($"UpdateJobController.{Action}", Description) );
         }
 
 

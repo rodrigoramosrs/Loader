@@ -72,6 +72,12 @@ namespace Loader.Infra.Data.Repository
             return returnData.OrderByDescending(x => x.BackupDate).ToList();
         }
 
+
+        public UpdateBackupEntry GetUpdateBackupEntryFromUpdateID(UpdateInstruction UpdateInstruction, Guid rollbackUpdateID)
+        {
+            return this.GetUpdateBackupEntryList(UpdateInstruction).Where(x => x.UpdateID == rollbackUpdateID).FirstOrDefault();
+        }
+
         public List<UpdateResult> GetUpdateHistory(UpdateInstruction instruction)
         {
             if (!Directory.Exists(_JobResultPath)) return new List<UpdateResult>();
