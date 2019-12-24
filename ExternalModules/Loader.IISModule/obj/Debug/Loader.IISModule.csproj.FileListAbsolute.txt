@@ -1,0 +1,6 @@
+C:\Users\rodrigo.ramos\source\repos\Loader\ExternalModules\Loader.IISModule\bin\Debug\Loader.IISModule.dll
+C:\Users\rodrigo.ramos\source\repos\Loader\ExternalModules\Loader.IISModule\bin\Debug\Loader.IISModule.pdb
+C:\Users\rodrigo.ramos\source\repos\Loader\ExternalModules\Loader.IISModule\obj\Debug\Loader.IISModule.csproj.CoreCompileInputs.cache
+C:\Users\rodrigo.ramos\source\repos\Loader\ExternalModules\Loader.IISModule\obj\Debug\Loader.IISModule.dll
+C:\Users\rodrigo.ramos\source\repos\Loader\ExternalModules\Loader.IISModule\obj\Debug\Loader.IISModule.pdb
+C:\Users\rodrigo.ramos\source\repos\Loader\ExternalModules\Loader.IISModule\obj\Debug\Loader.IISModule.csprojAssemblyReference.cache
