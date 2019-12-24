@@ -96,7 +96,7 @@ namespace Loader.Service.Services
                 }
                 else
                 {
-                    AnalyticsMessageResult =  $"Job '{QueuePosition}' not found to update for '{updateEntry.ProductName}' with version '{updateEntry.CurrentVersion}'. Nothing to update!";
+                    AnalyticsMessageResult =  $"Job '{QueuePosition}' did not found update for '{updateEntry.ProductName}' with version '{updateEntry.CurrentVersion}'. You have the latest version avaliable.";
                     updateResultReturn.AddMessage(AnalyticsMessageResult, UpdateResultMessage.eMessageType.INFORMATION);
 
                 }

@@ -10,7 +10,7 @@
     "CommandLineAfterUpdate": "%SYSTEMROOT%\\System32\\inetsrv\\appcmd start apppool /apppool.name:\"MPE.Servico.WCF\" | exit 0",
     "CheckVersionAfterUpdate": false,
     "AutoUpdate": false,
-    "UrlOrPathToUpdateDefinition": "C:\\temp\\Updates\\update.json"
+    "UrlOrPathToUpdateDefinition": "https://drive.google.com/uc?id=1Rifvr5vSDnrKfddwxQSHKBHi_2JpNYSx&export=download"
   },
   {
     "ID": "eb97e12a-4abf-4826-a5c8-052d139c4727",
