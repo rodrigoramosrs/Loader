@@ -22,4 +22,4 @@ Loader.Application/Hangfire.db
 Loader.Application/healthchecksdb
 Loader.Application/ClientApp/cmd/*
 Loader.Application/ClientApp/package-lock.json
-ExternalModules/Loader.IISModule/obj/Debug/Loader.IISModule.csproj.FileListAbsolute.txt
+
