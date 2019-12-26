@@ -2,6 +2,7 @@
 using Loader.Domain.Entities;
 using Loader.Domain.Interfaces;
 using Loader.Domain.Models;
+using Loader.Domain.Models.Job;
 using Loader.Domain.Models.Update;
 using Loader.Infra.Manager;
 using Loader.Infra.Manager.Bridge;
@@ -20,9 +21,11 @@ namespace Loader.Service.Services
     {
         private readonly IUpdateRepository _UpdateRepository;
         private readonly Analytics.BaseAnalyticsService _AnalyticsService;
-        public UpdateService(IUpdateRepository updateRepository, Analytics.BaseAnalyticsService AnalyticsService)
+        private readonly Job.JobService _JobService;
+        public UpdateService(IUpdateRepository UpdateRepository, Analytics.BaseAnalyticsService AnalyticsService, Job.JobService JobService)
         {
-            _UpdateRepository = updateRepository;
+            _UpdateRepository = UpdateRepository;
+            _JobService = JobService;
             _AnalyticsService = AnalyticsService;
         }
 
@@ -82,14 +85,15 @@ namespace Loader.Service.Services
 
         public string DoScheduledUpdate(UpdateInstruction UpdateInstruction)
         {
-            string CurrentUpdateJobQueue = this._UpdateRepository.GetQueuePositionFromUpdate(UpdateInstruction);
+            JobStatus CurrentJobStatus = this._JobService.GetQueuePosition(new Domain.Models.Job.JobStatus() { ID = UpdateInstruction.ID });
 
-            if (!string.IsNullOrEmpty(CurrentUpdateJobQueue)) return CurrentUpdateJobQueue;
+            if (!string.IsNullOrEmpty(CurrentJobStatus.QueuePosition)) return CurrentJobStatus.QueuePosition;
 
-            CurrentUpdateJobQueue = BackgroundJob.Enqueue(() => this.DoUpdate(UpdateInstruction));
+            CurrentJobStatus.ID = UpdateInstruction.ID;
+            CurrentJobStatus.QueuePosition = BackgroundJob.Enqueue(() => this.DoUpdate(UpdateInstruction));
 
-            _UpdateRepository.WriteJobStatus(UpdateInstruction, CurrentUpdateJobQueue);
-            return CurrentUpdateJobQueue;
+            this._JobService.CreateUpdateJobStatus(CurrentJobStatus);
+            return CurrentJobStatus.QueuePosition;
         }
 
         [AutomaticRetry(Attempts = 0)]
@@ -99,7 +103,7 @@ namespace Loader.Service.Services
 
             var updateResultReturn = new UpdateResult()
             {
-                ID = new Guid(),
+                ID = UpdateInstruction.ID,
                 IsSuccess = false,
                 //Message = "No update found. Nothing to update!",
                 UpdateInstructionID = UpdateInstruction.ID
@@ -109,18 +113,18 @@ namespace Loader.Service.Services
             try
             {
                 UpdateEntry updateEntry = this.HasUpdate(UpdateInstruction);
-                string QueuePosition = _UpdateRepository.GetQueuePositionFromUpdate(UpdateInstruction);
+                JobStatus JobStatus = _JobService.GetQueuePosition(new JobStatus() { ID = UpdateInstruction.ID });
 
                 if (updateEntry.HasUpdate)
                 {
                     updateResultReturn = ExecuteUpdate(updateEntry);
 
-                    AnalyticsMessageResult = !updateResultReturn.IsSuccess ? $"Job '{QueuePosition}' failed to update '{updateEntry.ProductName}' from '{updateEntry.CurrentVersion}' to '{updateEntry.CurrentVersion}'. Alepsed time is: {this.ConvertMillisecondsToTimeString(updateResultReturn.TimeSpentMilliseconds)}.\r\nSee details:\r\n\r\n{ JsonConvert.SerializeObject(updateResultReturn.Messages, Formatting.Indented)}"
-                    : AnalyticsMessageResult = $"Job '{QueuePosition}' updated '{updateEntry.ProductName}' from '{updateEntry.CurrentVersion}' to '{updateEntry.NewVersion}'. Alepsed time is: {this.ConvertMillisecondsToTimeString(updateResultReturn.TimeSpentMilliseconds)}.";
+                    AnalyticsMessageResult = !updateResultReturn.IsSuccess ? $"Job '{JobStatus.QueuePosition}' failed to update '{updateEntry.ProductName}' from '{updateEntry.CurrentVersion}' to '{updateEntry.CurrentVersion}'. Alepsed time is: {this.ConvertMillisecondsToTimeString(updateResultReturn.TimeSpentMilliseconds)}.\r\nSee details:\r\n\r\n{ JsonConvert.SerializeObject(updateResultReturn.Messages, Formatting.Indented)}"
+                    : AnalyticsMessageResult = $"Job '{JobStatus.QueuePosition}' updated '{updateEntry.ProductName}' from '{updateEntry.CurrentVersion}' to '{updateEntry.NewVersion}'. Alepsed time is: {this.ConvertMillisecondsToTimeString(updateResultReturn.TimeSpentMilliseconds)}.";
                 }
                 else
                 {
-                    AnalyticsMessageResult =  $"Job '{QueuePosition}' did not found update for '{updateEntry.ProductName}' with version '{updateEntry.CurrentVersion}'. You have the latest version avaliable.";
+                    AnalyticsMessageResult =  $"Job '{JobStatus.QueuePosition}' did not found update for '{updateEntry.ProductName}' with version '{updateEntry.CurrentVersion}'. You have the latest version avaliable.";
                     updateResultReturn.AddMessage(AnalyticsMessageResult, UpdateResultMessage.eMessageType.INFORMATION);
 
                 }
@@ -132,7 +136,7 @@ namespace Loader.Service.Services
             }
             finally
             {
-                _UpdateRepository.WriteJobStatus(UpdateInstruction, "", true);
+                _JobService.CreateUpdateJobStatus(new JobStatus() { ID = UpdateInstruction.ID, CurrentStatus = JobStatusTyes.Completed });
             }
 
             this._UpdateRepository.WriteUpdateInstructionResult(updateResultReturn);
@@ -264,14 +268,17 @@ namespace Loader.Service.Services
 
         public string DoScheduledRollback(Guid UpdateInstructionID, Guid RollbackUpdateBackupID)
         {
-            var updateInstruction = _UpdateRepository.GetUpdateInstructionByID(UpdateInstructionID);
-            string CurrentUpdateJobQueue = this._UpdateRepository.GetQueuePositionFromUpdate(updateInstruction);
 
-            if (!string.IsNullOrEmpty(CurrentUpdateJobQueue)) return CurrentUpdateJobQueue;
+            var UpdateInstruction = _UpdateRepository.GetUpdateInstructionByID(UpdateInstructionID);
+            JobStatus CurrentJobStatus = this._JobService.GetQueuePosition(new Domain.Models.Job.JobStatus() { ID = UpdateInstruction.ID });
 
-            CurrentUpdateJobQueue = BackgroundJob.Enqueue(() => this.DoRollback(UpdateInstructionID, RollbackUpdateBackupID));
-            _UpdateRepository.WriteJobStatus(updateInstruction, CurrentUpdateJobQueue);
-            return CurrentUpdateJobQueue;
+            if (!string.IsNullOrEmpty(CurrentJobStatus.QueuePosition)) return CurrentJobStatus.QueuePosition;
+
+            CurrentJobStatus.ID = UpdateInstruction.ID;
+            CurrentJobStatus.QueuePosition = BackgroundJob.Enqueue(() => this.DoRollback(UpdateInstructionID, RollbackUpdateBackupID));
+
+            this._JobService.CreateUpdateJobStatus(CurrentJobStatus);
+            return CurrentJobStatus.QueuePosition;
         }
 
         [AutomaticRetry(Attempts = 0)]
@@ -283,7 +290,7 @@ namespace Loader.Service.Services
             string AnalyticsMessageResult = "";
             var updateResultReturn = new UpdateResult()
             {
-                ID = new Guid(),
+                ID = UpdateInstruction.ID,
                 IsSuccess = false,
                 //Message = "No update found. Nothing to update!",
                 UpdateInstructionID = UpdateInstruction.ID
@@ -292,12 +299,12 @@ namespace Loader.Service.Services
             try
             {
                 Version CurrentVersionBeforeRollback = this.GetCurrentAssemblyVersion(UpdateInstruction);
-                string QueuePosition = _UpdateRepository.GetQueuePositionFromUpdate(UpdateInstruction);
+                JobStatus JobStatus = _JobService.GetQueuePosition(new JobStatus() { ID = UpdateInstruction.ID });
 
                 updateResultReturn = ExecuteRollback(UpdateInstruction, UpdateBackupEntry);
 
-                AnalyticsMessageResult = !updateResultReturn.IsSuccess ? $"Job '{QueuePosition}' Failed to rollback '{UpdateInstruction.Name}' from '{CurrentVersionBeforeRollback}' to '{UpdateBackupEntry.BackupVersion}'. Alepsed time is: {this.ConvertMillisecondsToTimeString(updateResultReturn.TimeSpentMilliseconds)}.\r\nSee details:\r\n\r\n{ JsonConvert.SerializeObject(updateResultReturn.Messages, Formatting.Indented)}"
-                        : $"Job '{QueuePosition}' rollback success for product '{UpdateInstruction.Name}' from '{CurrentVersionBeforeRollback}' to '{UpdateBackupEntry.BackupVersion}'. Alepsed time is: {this.ConvertMillisecondsToTimeString(updateResultReturn.TimeSpentMilliseconds)}.";
+                AnalyticsMessageResult = !updateResultReturn.IsSuccess ? $"Job '{JobStatus.QueuePosition}' Failed to rollback '{UpdateInstruction.Name}' from '{CurrentVersionBeforeRollback}' to '{UpdateBackupEntry.BackupVersion}'. Alepsed time is: {this.ConvertMillisecondsToTimeString(updateResultReturn.TimeSpentMilliseconds)}.\r\nSee details:\r\n\r\n{ JsonConvert.SerializeObject(updateResultReturn.Messages, Formatting.Indented)}"
+                        : $"Job '{JobStatus.QueuePosition}' rollback success for product '{UpdateInstruction.Name}' from '{CurrentVersionBeforeRollback}' to '{UpdateBackupEntry.BackupVersion}'. Alepsed time is: {this.ConvertMillisecondsToTimeString(updateResultReturn.TimeSpentMilliseconds)}.";
 
             }
             catch (Exception ex)
@@ -306,16 +313,11 @@ namespace Loader.Service.Services
             }
             finally
             {
-                _UpdateRepository.WriteJobStatus(UpdateInstruction, "", true);
+                _JobService.CreateUpdateJobStatus(new JobStatus() { ID = UpdateInstruction.ID, CurrentStatus = JobStatusTyes.Completed });
             }
 
             this.SendAnalyticsData("UpdateService.DoRollback.Results", AnalyticsMessageResult);
             return updateResultReturn;
-        }
-
-        public bool ClearAllJobStatus()
-        {
-           return this._UpdateRepository.ClearAllJobStatus();
         }
 
         public UpdateResult ExecuteRollback(UpdateInstruction UpdateInstruction, UpdateBackupEntry UpdateBackupEntry)

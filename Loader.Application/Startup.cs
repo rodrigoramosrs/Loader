@@ -20,6 +20,7 @@ using Loader.Service.Services.Analytics;
 using Loader.Application.Middleware.Log;
 using Loader.Application.Middleware.Request;
 using Loader.Service.Services.License;
+using Loader.Service.Services.Job;
 
 namespace Loader.Application
 {
@@ -80,14 +81,20 @@ namespace Loader.Application
             services.AddTransient<Service.Services.UpdateService, Service.Services.UpdateService>(serviceProvider =>
             {
                 var analyticsService = serviceProvider.GetService<Service.Services.Analytics.BaseAnalyticsService>();
-                return new Service.Services.UpdateService(new Infra.Data.Repository.UpdateRepository(_env.ContentRootPath), analyticsService);
+                var JobService = serviceProvider.GetService < Service.Services.Job.JobService>();
+                return new Service.Services.UpdateService(new Infra.Data.Repository.UpdateRepository(_env.ContentRootPath), analyticsService, JobService);
             });
 
             services.AddSingleton<Service.Services.Analytics.BaseAnalyticsService, Service.Services.Analytics.BaseAnalyticsService>(serviceProvider =>
             {
                 return new Service.Services.Analytics.GoogleAnalyticsService(Configuration["Analytics:ID"], Configuration["Analytics:ExceptionID"], Configuration["Customer:Name"], Configuration["Customer:ID"]);
             });
-
+            services.AddSingleton<Service.Services.Job.JobService, Service.Services.Job.JobService>(serviceProvider =>
+            {
+                var analyticsService = serviceProvider.GetService<Service.Services.Analytics.BaseAnalyticsService>();
+                var jobRepository = new Infra.Data.Repository.JobRepository();
+                return new Service.Services.Job.JobService(analyticsService, jobRepository);
+            });
             services.AddSingleton<Service.Services.License.BaseLicenseService, Service.Services.License.BaseLicenseService>(serviceProvider =>
             {
                 var analyticsService = serviceProvider.GetService<Service.Services.Analytics.BaseAnalyticsService>();
@@ -105,7 +112,7 @@ namespace Loader.Application
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IBackgroundJobClient backgroundJobs, IRecurringJobManager recurringJobManager,
-            ILoggerFactory LoggerFactory, IHostingEnvironment env, BaseAnalyticsService AnalyticsService, BaseLicenseService LicenseService, UpdateService UpdateService)
+            ILoggerFactory LoggerFactory, IHostingEnvironment env, BaseAnalyticsService AnalyticsService, BaseLicenseService LicenseService, UpdateService UpdateService, JobService JobService)
         {
             
 
@@ -159,7 +166,7 @@ namespace Loader.Application
             });
 
             //Limpando todos os status anteriormente pendentes na inicialização
-            UpdateService.ClearAllJobStatus();
+            JobService.ClearAllJobStatus();
 
             this.RegisterHangfireTasks();
            /* recurringJobManager.AddOrUpdate("LICENSE-CHECK", () =>

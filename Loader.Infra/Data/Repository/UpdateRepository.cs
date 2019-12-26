@@ -21,7 +21,7 @@ namespace Loader.Infra.Data.Repository
         private readonly string _LoaderDefinitionFileName = "LoaderDefinition.json";
         private readonly string _UpdateResultFilenameTemplate = "{updateid}_{updateinstructionid}_{datetime}.json";
         private readonly string _JobResultPath = ".\\job_result\\";
-        private readonly string _JobStatusPath = ".\\job_status\\";
+        
 
         private string GetUpdateResultFileName(Guid UpdateInstructionID,  Guid UpdateID, DateTime dateTime)
         {
@@ -96,40 +96,6 @@ namespace Loader.Infra.Data.Repository
             return Directory.GetFiles(_JobResultPath, $"{ID}*").FirstOrDefault();
         }
 
-        public bool WriteJobStatus(UpdateInstruction instruction, string QueuePosition, bool HasFinished = false)
-        {
-            if (!Directory.Exists(_JobStatusPath)) Directory.CreateDirectory(_JobStatusPath);
-
-            //string Filename = Path.Combine(_JobStatusPath,instruction.ID.ToString())
-            if (HasFinished)
-            {
-                foreach (var item in Directory.GetFiles(_JobStatusPath, $"*{instruction.ID}"))
-                    File.Delete(item);
-            }
-            else
-            {
-                File.WriteAllText(Path.Combine(_JobStatusPath, instruction.ID.ToString()), QueuePosition);
-            }
-
-            return true;
-        }
-
-        public string GetQueuePositionFromUpdate(UpdateInstruction instruction)
-        {
-            string Filename = Path.Combine(_JobStatusPath, instruction.ID.ToString());
-            if (!File.Exists(Filename)) return "";
-
-            return File.ReadAllText(Path.Combine(_JobStatusPath, instruction.ID.ToString()));
-        }
-
-        public bool ClearAllJobStatus()
-        {
-            if (!Directory.Exists(_JobStatusPath)) Directory.CreateDirectory(_JobStatusPath);
-
-            foreach (var item in Directory.GetFiles(_JobStatusPath, "*"))
-                File.Delete(item);
-
-            return true;
-        }
+        
     }
 }
