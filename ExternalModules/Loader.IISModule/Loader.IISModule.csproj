@@ -7,11 +7,12 @@
     <ProjectGuid>{E9C0BAC0-B5C1-417C-8E01-D90B07D1922E}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Loader.IISModule</RootNamespace>
+    <RootNamespace>Loader</RootNamespace>
     <AssemblyName>Loader.IISModule</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -30,19 +31,47 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>Loader.IISModule.pfx</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DelaySign>false</DelaySign>
+  </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Web" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
+    <Reference Include="System">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Web">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Data">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Xml">
+      <Private>False</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="IISModule.cs" />
+    <Compile Include="Helper\AnalyticsManager.cs" />
+    <Compile Include="Helper\ConfigurationManager.cs" />
+    <Compile Include="MainModule.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Loader.IISModule.pfx" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="library\GacUtil.exe">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>"$(ProjectDir)\$(OutDir)\library\GacUtil.exe" /u Loader.IISModule
+"$(ProjectDir)\$(OutDir)\library\GacUtil.exe" /i "$(ProjectDir)\$(OutDir)\Loader.IISModule.dll"
+iisreset /restart</PostBuildEvent>
+  </PropertyGroup>
 </Project>
