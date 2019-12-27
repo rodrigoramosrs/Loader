@@ -51,26 +51,30 @@ namespace Loader.IISModule
                 string PoolName = context.Request.ServerVariables["APP_POOL_ID"];
                 string Path = string.Empty;
                 string SiteName = HostingEnvironment.ApplicationHost.GetSiteName();
+                bool IsSlowRequest = timer.ElapsedMilliseconds > (1000 * 10);
 
-                builder.AppendLine("Alepsed: " + this.ConvertToTimeString(timer.ElapsedMilliseconds));
+                builder.AppendLine("Alepsed: " + this.ConvertToTimeString(timer.ElapsedMilliseconds) + (IsSlowRequest ? " [SLOW]" : ""));
+
                 builder.AppendLine("Method: " + context.Request.HttpMethod);
                 builder.AppendLine("PoolName: " + PoolName);
                 
                 if (!string.IsNullOrEmpty(context.Request.ServerVariables["HTTP_SOAPACTION"]))
                 {
                     string soapAction = context.Request.ServerVariables["HTTP_SOAPACTION"].Replace("http://tempuri.org/", string.Empty).Replace("\"",string.Empty);
-                    Path = "[./" + context.Request.Path + "/" + soapAction + "]";
+                    Path = context.Request.Path + "/" + soapAction;
                     builder.AppendLine("Action: " + soapAction);
                 }
                 else
                 {
-                    Path = "[./" + context.Request.Path + "]";
+                    Path = context.Request.Path;
                 }
 
                 if (!string.IsNullOrEmpty(context.Request.QueryString.ToString()))
                     builder.AppendLine("Query: " + context.Request.QueryString);
 
-                AnalyticsManager.SendData("[" + SiteName + "] [" + context.Request.UserHostAddress + "] [" + Path + "]", builder.ToString());
+                AnalyticsManager.SendData("[" + SiteName + "] [" + context.Request.UserHostAddress + "] [./" + Path + "]", builder.ToString());
+
+
             }
             catch (Exception)
             {
@@ -86,11 +90,16 @@ namespace Loader.IISModule
         private string ConvertToTimeString(long AlepsedTimeMiliseconds)
         {
             var timeSpan = TimeSpan.FromMilliseconds(AlepsedTimeMiliseconds);
-            return string.Format("{0:D2}h:{1:D2}m:{2:D2}s:{3:D3}ms",
+            return string.Format("{0:D2}m:{1:D2}s",
+                        //timeSpan.Hours,
+                        timeSpan.Minutes,
+                        timeSpan.Seconds);
+            /*return string.Format("{0:D2}h:{1:D2}m:{2:D2}s:{3:D3}ms",
                         timeSpan.Hours,
                         timeSpan.Minutes,
                         timeSpan.Seconds,
-                        timeSpan.Milliseconds);
+                        0);*/
+            //timeSpan.Milliseconds);
         }
 
         public void Dispose()

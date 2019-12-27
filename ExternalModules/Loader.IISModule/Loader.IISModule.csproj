@@ -57,6 +57,7 @@
   <ItemGroup>
     <Compile Include="Helper\AnalyticsManager.cs" />
     <Compile Include="Helper\ConfigurationManager.cs" />
+    <Compile Include="Helper\JSONSerializer.cs" />
     <Compile Include="MainModule.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

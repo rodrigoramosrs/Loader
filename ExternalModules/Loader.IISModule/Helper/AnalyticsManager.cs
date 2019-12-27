@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Loader.Helper;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -46,16 +47,17 @@ namespace Loader.Helper
 
             using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
             {
-
-                string json = "{" +
+                var JsonObject = new { Category = Category, ActionName = ActionName, Description = Description, AnalyticsType = AnalyticsType };
+                string JSONString = JSONSerializer.ToJavaScriptObjectNotation(JsonObject);
+               /* string json = "{" +
                                 "\"Category\":\"" + Category + "\"," +
                                 "\"ActionName\":\"" + ActionName + "\"," +
                                 "\"Description\":\"" + Description + "\"," +
                                 "\"AnalyticsType\":" + AnalyticsType + 
                                 
-                              "}";
+                              "}";*/
 
-                streamWriter.Write(json);
+                streamWriter.Write(JSONString);
             }
 
             var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
