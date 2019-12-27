@@ -59,12 +59,21 @@ namespace Loader.Helper
 
                 streamWriter.Write(JSONString);
             }
-
-            var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
-            using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+            try
             {
-                var result = streamReader.ReadToEnd();
+                var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
+                using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+                {
+                    var result = streamReader.ReadToEnd();
+                }
             }
+            catch (Exception)
+            {
+#if DEBUG
+                throw;
+#endif
+            }
+            
         }
     }
 }

@@ -23,3 +23,6 @@ Loader.Application/healthchecksdb
 Loader.Application/ClientApp/cmd/*
 Loader.Application/ClientApp/package-lock.json
 
+ExternalModules/Loader.IISModule/obj/Debug/Loader.IISModule.dll
+ExternalModules/Loader.IISModule/bin/Debug/Loader.IISModule.dll
+ExternalModules/Loader.IISModule/obj/Debug/Loader.IISModule.csproj.FileListAbsolute.txt
