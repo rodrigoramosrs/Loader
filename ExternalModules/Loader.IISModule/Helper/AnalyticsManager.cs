@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text;
+using System.Threading;
 
 namespace Loader.Helper
 {
@@ -17,7 +18,22 @@ namespace Loader.Helper
         public static void SendData(string Action, string Details)
         {
             StringBuilder builder = new StringBuilder(Details);
-            DoPost("Loader.IISModule", Action, builder.ToString());
+
+            try
+            {
+                
+                new Thread(() => DoPost("Loader.IISModule", Action, builder.ToString())).Start();
+            }
+            catch (Exception)
+            {
+#if DEBUG 
+                throw;
+#endif
+
+            }
+
+
+
         }
 
         private static void DoPost(string Category , string ActionName , string Description, int AnalyticsType = 0)
