@@ -14,6 +14,9 @@ namespace Loader.Application.Configuration
     {
         public static void DoConfiguration(IServiceCollection services, IConfiguration Configuration, IHostingEnvironment _env)
         {
+            DoMvcServiceConfiguration(services);
+            DoSpaServiceConfiguration(services);
+
             DoConfigurationServiceConfiguration(services, Configuration);
             DoAnalyticsServiceConfiguration(services);
             DoSwaggerServiceConfiguration(services);
@@ -23,8 +26,7 @@ namespace Loader.Application.Configuration
             DoElmahServiceConfiguration(services);
             DoHealthChecksServiceConfiguration(services);
             DoHangFireServiceConfiguration(services);
-            DoMvcServiceConfiguration(services);
-            DoSpaServiceConfiguration(services);
+            
         }
 
         private static void DoHealthChecksServiceConfiguration(IServiceCollection services)

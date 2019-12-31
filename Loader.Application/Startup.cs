@@ -21,6 +21,7 @@ using Loader.Application.Middleware.Log;
 using Loader.Application.Middleware.Request;
 using Loader.Service.Services.License;
 using Loader.Service.Services.Job;
+using System.Threading;
 
 namespace Loader.Application
 {
@@ -28,6 +29,10 @@ namespace Loader.Application
     {
         public IConfiguration Configuration { get; }
         public IHostingEnvironment _env { get; }
+
+        public BaseAnalyticsService BaseAnalyticsService { get; private set; }
+
+        protected DateTime StartupDateTime = DateTime.Now;
 
         public Startup(IConfiguration configuration, IHostingEnvironment env)
         {
@@ -41,17 +46,35 @@ namespace Loader.Application
         public void ConfigureServices(IServiceCollection services)
         {
             Application.Configuration.ServiceConfiguration.DoConfiguration(services, Configuration, _env);
+            this.BaseAnalyticsService = services.BuildServiceProvider().GetService<BaseAnalyticsService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IBackgroundJobClient backgroundJobs, IRecurringJobManager recurringJobManager,
-            ILoggerFactory LoggerFactory, IHostingEnvironment env, BaseAnalyticsService AnalyticsService, BaseLicenseService LicenseService, UpdateService UpdateService, JobService JobService)
+        public void Configure(IApplicationBuilder app, IApplicationLifetime applicationLifetime, JobService JobService, BaseAnalyticsService AnalyticsService)
         {
             Loader.Application.Configuration.AppConfiguration.DoAppConfiguration(app, _env);
-            
+            applicationLifetime.ApplicationStopping.Register(OnShutdown);
+
             //Limpando todos os status anteriormente pendentes na inicialização
             JobService.ClearAllJobStatus();
             this.RegisterHangfireTasks();
+#if !DEBUG
+            this.BaseAnalyticsService.SendInformation("Loader.Startup", $"Loader version {this.GetType().Assembly.GetName().Version.ToString()} started at {this.StartupDateTime.ToString("dd/MM/yyyy HH:mm:ss")}");
+#endif
+        }
+        private async void OnShutdown()
+        {
+            //this code is called when the application stops
+#if !DEBUG
+            TimeSpan AppLifeTime = DateTime.Now.Subtract(StartupDateTime);
+            string FormattedLifeTime = string.Format("{0}d:{1:D2}h:{2:D2}m:{3:D2}s:{4:D3}ms",
+                        AppLifeTime.Days,
+                        AppLifeTime.Hours,
+                        AppLifeTime.Minutes,
+                        AppLifeTime.Seconds,
+                        AppLifeTime.Milliseconds);
+            await this.BaseAnalyticsService.SendInformation("Loader.Shutdown", $"Loader version {this.GetType().Assembly.GetName().Version.ToString()} stoped at {DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")}. Lifetime is {FormattedLifeTime}");
+#endif
         }
 
         private void RegisterHangfireTasks()

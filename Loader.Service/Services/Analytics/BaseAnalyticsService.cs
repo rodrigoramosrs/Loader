@@ -39,9 +39,9 @@ namespace Loader.Service.Services.Analytics
         /// <param name="Label">Útil para classificar eventos (por exemplo, 'Fall Campaign').</param>
         /// <param name="Value">Um valor numérico associado ao evento (por exemplo, 42)</param>
         /// <returns></returns>
-        public abstract Task<bool> SendInformation(string ActionName, string Description);// AnalyticsInformationData AnalyticsData);
-        public abstract Task<bool> SendPageView(string HostName, string PageName, string Title = null);// AnalyticsInformationData AnalyticsData);
-        public abstract Task<bool> SendException(string ActionName, Exception ex);//AnalyticsExceptionData ExceptionData);
+        public abstract Task<bool> SendInformation(string ActionName, string Description);
+        public abstract Task<bool> SendPageView(string HostName, string PageName, string Title = null);
+        public abstract Task<bool> SendException(string ActionName, Exception ex);
 
         public String FormatExceptionMessage(Exception exception, int innerDepthCount = 0)
         {
