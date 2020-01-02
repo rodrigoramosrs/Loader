@@ -52,12 +52,18 @@ namespace Loader.Application
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IApplicationLifetime applicationLifetime, JobService JobService, BaseAnalyticsService AnalyticsService)
         {
-            Loader.Application.Configuration.AppConfiguration.DoAppConfiguration(app, _env);
             applicationLifetime.ApplicationStopping.Register(OnShutdown);
+            applicationLifetime.ApplicationStarted.Register(OnStarted);
 
+            Loader.Application.Configuration.AppConfiguration.DoAppConfiguration(app, _env);
             //Limpando todos os status anteriormente pendentes na inicialização
             JobService.ClearAllJobStatus();
             this.RegisterHangfireTasks();
+
+        }
+
+        private async void OnStarted()
+        {
 #if !DEBUG
             this.BaseAnalyticsService.SendInformation("Loader.Startup", $"Loader version {this.GetType().Assembly.GetName().Version.ToString()} started at {this.StartupDateTime.ToString("dd/MM/yyyy HH:mm:ss")}");
 #endif
