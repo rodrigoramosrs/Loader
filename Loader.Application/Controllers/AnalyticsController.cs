@@ -26,9 +26,9 @@ namespace Loader.Application.Controllers
         }
 
         [HttpPost("[action]")]
-        public object Send([FromBody]AnalyticsInformationData AnalyticsData)
+        public async void Send([FromBody]AnalyticsInformationData AnalyticsData)
         {
-            return this._AnalyticsService.SendInformation($"{AnalyticsData.Category}.{AnalyticsData.ActionName}" , AnalyticsData.Description).Result;
+            Task.Run(() =>  this._AnalyticsService.SendInformation($"{AnalyticsData.Category}.{AnalyticsData.ActionName}" , AnalyticsData.Description));
         }
     }
 }

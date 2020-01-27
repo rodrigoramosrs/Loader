@@ -98,6 +98,15 @@ namespace Loader.Application
             //"*/10 * * * * *",
             Cron.Hourly,
             TimeZoneInfo.Local);
+
+            RecurringJob.AddOrUpdate<BaseAnalyticsService>(
+               "FLUSH-ANALYTICS-DATA",
+               s => s.FlushData(),
+               //"*/10 * * * * *",
+               Cron.Minutely,
+               TimeZoneInfo.Local);
+
+           
         }
     }
 }

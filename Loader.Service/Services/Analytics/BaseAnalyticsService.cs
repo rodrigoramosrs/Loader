@@ -1,4 +1,5 @@
-﻿using Loader.Domain.Models.Analytics;
+﻿using Hangfire;
+using Loader.Domain.Models.Analytics;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -42,6 +43,10 @@ namespace Loader.Service.Services.Analytics
         public abstract Task<bool> SendInformation(string ActionName, string Description);
         public abstract Task<bool> SendPageView(string HostName, string PageName, string Title = null);
         public abstract Task<bool> SendException(string ActionName, Exception ex);
+
+        [DisableConcurrentExecution(10)]
+        [AutomaticRetry(Attempts = 0, LogEvents = false, OnAttemptsExceeded = AttemptsExceededAction.Delete)]
+        public abstract Task FlushData();
 
         public String FormatExceptionMessage(Exception exception, int innerDepthCount = 0)
         {

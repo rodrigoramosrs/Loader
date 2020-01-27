@@ -22,6 +22,7 @@ namespace Loader.Application
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
                    .UseIISIntegration()
+                   .UseKestrel(options => { options.Limits.MaxConcurrentConnections = null; options.Limits.MaxConcurrentUpgradedConnections = null; })
                    .UseStartup<Startup>();
     }
 }
