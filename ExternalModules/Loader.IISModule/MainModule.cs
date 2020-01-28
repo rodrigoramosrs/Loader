@@ -51,28 +51,30 @@ namespace Loader.IISModule
                 string PoolName = context.Request.ServerVariables["APP_POOL_ID"];
                 string Path = string.Empty;
                 string SiteName = HostingEnvironment.ApplicationHost.GetSiteName();
-                bool IsSlowRequest = timer.ElapsedMilliseconds > (1000 * 10);
+                bool IsSlowRequest = timer.ElapsedMilliseconds > (1000 * 3);
 
                 builder.AppendLine("Alepsed: " + this.ConvertToTimeString(timer.ElapsedMilliseconds) + (IsSlowRequest ? " [SLOW]" : ""));
 
-                builder.AppendLine("Method: " + context.Request.HttpMethod);
+                //builder.AppendLine("Method: " + context.Request.HttpMethod);
                 builder.AppendLine("PoolName: " + PoolName);
                 
                 if (!string.IsNullOrEmpty(context.Request.ServerVariables["HTTP_SOAPACTION"]))
                 {
                     string soapAction = context.Request.ServerVariables["HTTP_SOAPACTION"].Replace("http://tempuri.org/", string.Empty).Replace("\"",string.Empty);
                     Path = context.Request.Path + "/" + soapAction;
-                    builder.AppendLine("Action: " + soapAction);
+                    builder.AppendLine("Action: " + soapAction + "["+ context.Request.HttpMethod + "]");
                 }
                 else
                 {
-                    Path = context.Request.Path;
+                    Path = context.Request.Path + "[" + context.Request.HttpMethod + "]";
                 }
 
                 if (!string.IsNullOrEmpty(context.Request.QueryString.ToString()))
                     builder.AppendLine("Query: " + context.Request.QueryString);
 
-                AnalyticsManager.SendData("[" + SiteName + "] [" + context.Request.UserHostAddress + "] [./" + Path + "]", builder.ToString());
+                builder.AppendLine("Client: " + context.Request.UserHostAddress);
+
+                AnalyticsManager.SendData("[" + SiteName + "] [./" + Path + "]", builder.ToString());
 
 
             }
