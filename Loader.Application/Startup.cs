@@ -50,7 +50,7 @@ namespace Loader.Application
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IApplicationLifetime applicationLifetime, JobService JobService, BaseAnalyticsService AnalyticsService)
+        public void Configure(IApplicationBuilder app, IApplicationLifetime applicationLifetime, JobService JobService, BaseAnalyticsService AnalyticsService, Service.Services.ComputerMonitor.ComputerMonitorService ComputerMonitorService)
         {
             applicationLifetime.ApplicationStopping.Register(OnShutdown);
             applicationLifetime.ApplicationStarted.Register(OnStarted);
@@ -58,6 +58,7 @@ namespace Loader.Application
             Loader.Application.Configuration.AppConfiguration.DoAppConfiguration(app, _env);
             //Limpando todos os status anteriormente pendentes na inicialização
             JobService.ClearAllJobStatus();
+            ComputerMonitorService.RegisterBackgroundJobs();
             this.RegisterHangfireTasks();
 
         }

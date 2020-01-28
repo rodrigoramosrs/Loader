@@ -26,7 +26,7 @@ namespace Loader.Application.Configuration
             DoElmahServiceConfiguration(services);
             DoHealthChecksServiceConfiguration(services);
             DoHangFireServiceConfiguration(services);
-            
+            DoComputerMonitorServiceConfiguration(services);
         }
 
         private static void DoHealthChecksServiceConfiguration(IServiceCollection services)
@@ -148,5 +148,16 @@ namespace Loader.Application.Configuration
                     CustomerConfiguration.ID);
             });
         }
+
+        private static void DoComputerMonitorServiceConfiguration(IServiceCollection services)
+        {
+            services.AddSingleton<Service.Services.ComputerMonitor.ComputerMonitorService, Service.Services.ComputerMonitor.ComputerMonitorService>(serviceProvider =>
+            {
+                var analyticsService = serviceProvider.GetService<Service.Services.Analytics.BaseAnalyticsService>();
+                var JobService = serviceProvider.GetService<Service.Services.Job.JobService>();
+                return new Service.Services.ComputerMonitor.ComputerMonitorService(analyticsService, JobService);
+            });
+        }
+        
     }
 }
