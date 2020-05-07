@@ -145,7 +145,8 @@ namespace Loader.Application.Configuration
                     AnalyticsConfiguration.ID,
                     AnalyticsConfiguration.ExceptionID,
                     CustomerConfiguration.Name,
-                    CustomerConfiguration.ID);
+                    CustomerConfiguration.ID, 
+                    AnalyticsConfiguration.SaveAnalyticsToFile);
             });
         }
 

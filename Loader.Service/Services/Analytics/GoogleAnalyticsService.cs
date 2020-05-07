@@ -16,19 +16,23 @@ namespace Loader.Service.Services.Analytics
         private static List<AnalyticsInformationData> _DataToSend = new List<AnalyticsInformationData>();
         private static object Locker = new object();
        
-        public GoogleAnalyticsService(string DefaultAnalyticsID, string ExceptionAnalyticsID, string CustomerName, string CustomerID) 
-            : base(DefaultAnalyticsID, ExceptionAnalyticsID, CustomerName, CustomerID) { }
+        public GoogleAnalyticsService(string DefaultAnalyticsID, string ExceptionAnalyticsID, string CustomerName, string CustomerID, bool SaveAnalyticsToFile) 
+            : base(DefaultAnalyticsID, ExceptionAnalyticsID, CustomerName, CustomerID, SaveAnalyticsToFile) { }
 
         //public GoogleAnalyticsService(string AnalyticsID, ExceptionAnalyticsID, string CustomerName, string CustomerID) : base(DefaultAnalyticsID, ExceptionAnalyticsID, CustomerName, CustomerID) { }
 
         public override Task<bool> SendInformation(string ActionName, string Description)//(AnalyticsInformationData AnalyticsData)
         {
+            
+
             this.ScheduleDataToSend(new AnalyticsInformationData()
             {
                 ActionName = ActionName,//ExceptionData.Exception.Message.ToString(),
                 //Category = "Loader.Application.AnalyticsException",
                 Description = Description
             });
+
+            this.SaveDataToFile("INFO","Action:" + ActionName + "\r\nDescription:" + Description);
             return Task.FromResult(true);
 
             var analyticsData = new AnalyticsInformationData()

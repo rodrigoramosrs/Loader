@@ -18,6 +18,7 @@ namespace Loader.Service.Services.Configuration
                 {
                     ID = this.GetConfiguration("Configuration:Analytics:ID"),
                     ExceptionID = this.GetConfiguration("Configuration:Analytics:ExceptionID"),
+                    SaveAnalyticsToFile = this.GetConfiguration("Configuration:Analytics:SaveAnalyticsToFile").ToUpper() == "TRUE",
                 };
             }
         }

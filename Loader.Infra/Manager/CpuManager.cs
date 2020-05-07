@@ -57,7 +57,15 @@ namespace Loader.Infra.Manager
             //var totalPercentage = lines[1].Split("=", StringSplitOptions.RemoveEmptyEntries);
 
             var metrics = new CpuMetrics();
-            metrics.LoadPercentage = int.Parse(totalPercentage[1]); // Math.Round(/ 1024, 2);
+            try
+            {
+                metrics.LoadPercentage = int.Parse(totalPercentage[1]); // Math.Round(/ 1024, 2);
+            }
+            catch (Exception)
+            {
+                metrics.LoadPercentage = - 1;
+            }
+            
             
             return metrics;
         }

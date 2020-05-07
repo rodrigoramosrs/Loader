@@ -31,18 +31,31 @@ namespace Loader.IISModule
 
         private void Application_EndRequest(object sender, EventArgs e)
         {
-            timer.Stop();
-            this.SendStatistic((sender as HttpApplication).Context);
+            
+            try
+            {
+                timer.Stop();
+                this.SendStatistic((sender as HttpApplication).Context);
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteErrorLog(ex.ToString());
+            }
+            
         }
 
 
-
-
         List<string> exclusionList = new List<string>() { ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".javascript", ".js", ".png", ".css", ".ico", "chatserver.svc", ".axd" };
+        int SlowRequestInMilliseconds = (1000 * 3);
         private void SendStatistic(HttpContext context)
         {
             try
             {
+                bool IsSlowRequest = timer.ElapsedMilliseconds > SlowRequestInMilliseconds;
+
+
+                if (!IsSlowRequest) return;
+
                 foreach (var exclusion in exclusionList)
                     if (context.Request.Path.ToLower().Contains(exclusion)) return;
 
@@ -51,7 +64,7 @@ namespace Loader.IISModule
                 string PoolName = context.Request.ServerVariables["APP_POOL_ID"];
                 string Path = string.Empty;
                 string SiteName = HostingEnvironment.ApplicationHost.GetSiteName();
-                bool IsSlowRequest = timer.ElapsedMilliseconds > (1000 * 3);
+                
 
                 builder.AppendLine("Alepsed: " + this.ConvertToTimeString(timer.ElapsedMilliseconds) + (IsSlowRequest ? " [SLOW]" : ""));
 
@@ -78,11 +91,15 @@ namespace Loader.IISModule
 
 
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-#if DEBUG 
+                
+#if DEBUG
                 throw;
+#else
+                LogHelper.WriteErrorLog(ex.ToString());
 #endif
+
 
             }
 
@@ -107,5 +124,7 @@ namespace Loader.IISModule
         public void Dispose()
         {
         }
+
+       
     }
 }

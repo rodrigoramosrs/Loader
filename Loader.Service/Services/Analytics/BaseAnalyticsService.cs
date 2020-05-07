@@ -3,7 +3,9 @@ using Loader.Domain.Models.Analytics;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -15,21 +17,36 @@ namespace Loader.Service.Services.Analytics
         private readonly string _CustomerName;
         private readonly string _CustomerID;
         private readonly string _ExceptionAnalyticsID;
+        private readonly bool _SaveAnalyticsToFile;
 
         protected string DefaultAnalyticsID { get { return this._DefaultAnalyticsID; } }
         protected string ExceptionAnalyticsID { get { return this._ExceptionAnalyticsID; } }
         
         protected string CustomerName { get { return this._CustomerName; } }
         protected string CustomerID { get { return this._CustomerID; } }
+        protected bool SaveAnalyticsToFile { get { return this._SaveAnalyticsToFile; } }
+        
 
-        protected BaseAnalyticsService(string DefaultAnalyticsID, string ExceptionAnalyticsID, string CustomerName, string CustomerID)
+        protected BaseAnalyticsService(string DefaultAnalyticsID, string ExceptionAnalyticsID, string CustomerName, string CustomerID, bool SaveAnalyticsToFile)
         {
             _DefaultAnalyticsID = DefaultAnalyticsID;
             _CustomerName = CustomerName;
             _CustomerID = CustomerID;
+            _SaveAnalyticsToFile = SaveAnalyticsToFile;
 
             if (string.IsNullOrEmpty(ExceptionAnalyticsID))
                 this._ExceptionAnalyticsID = DefaultAnalyticsID;
+        }
+
+        protected void SaveDataToFile(string Type , string Content)
+        {
+            if (!this.SaveAnalyticsToFile) return;
+
+            string AnalyticsDirectory = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location) + "\\analytics_data";
+
+            if (!Directory.Exists(AnalyticsDirectory)) Directory.CreateDirectory(AnalyticsDirectory);
+            string Filename = "analytics_" + Type + "_" + DateTime.Now.ToString("dd_MM_yyyy-hh_mm_ss.fff") + ".json";
+            File.WriteAllText(AnalyticsDirectory + "\\" + Filename, Content);
         }
 
         /// <summary>

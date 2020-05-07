@@ -25,10 +25,12 @@ namespace Loader.Helper
                 
                 new Thread(() => DoPost("Loader.IISModule", Action, builder.ToString())).Start();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
 #if DEBUG 
-                throw;
+                throw ex;
+#else
+                LogHelper.WriteErrorLog(ex.ToString());
 #endif
 
             }
@@ -59,7 +61,6 @@ namespace Loader.Helper
                                      "\"AnalyticsType\":" + AnalyticsType + 
 
                                    "}";*/
-
                     streamWriter.Write(JSONString);
                 }
                 try
@@ -70,20 +71,21 @@ namespace Loader.Helper
                         var result = streamReader.ReadToEnd();
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
-                    
+                    LogHelper.WriteErrorLog(ex.ToString());
                 }
                
             }
-            catch (Exception)
+            catch (Exception ex)
             {
 #if DEBUG
-                
+                throw ex;
+#else
+                LogHelper.WriteErrorLog(ex.ToString());
 #endif
             }
-            
+
         }
     }
 }

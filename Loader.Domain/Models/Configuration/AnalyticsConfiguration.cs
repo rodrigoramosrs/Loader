@@ -8,5 +8,7 @@ namespace Loader.Domain.Models.Configuration
     {
         public string ID { get; set; }
         public string ExceptionID { get; set; }
+
+        public bool SaveAnalyticsToFile { get; set; }
     }
 }

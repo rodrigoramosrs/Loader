@@ -76,26 +76,45 @@ namespace Loader.Infra.Manager
         public  List<DiskMetrics> CheckAllDisksSpace()
         {
             var diskResult = new List<DiskMetrics>();
-            var exclusionList = new List<DriveType>() { DriveType.Network, DriveType.CDRom, DriveType.Ram, DriveType.Removable };
-            foreach (var driveInfo in DriveInfo.GetDrives())
+            try
             {
-                if (exclusionList.Contains(driveInfo.DriveType)) continue;
-
-                //var totalBytes = driveInfo.TotalSize;
-                //var freeBytes = driveInfo.AvailableFreeSpace;
                 
-               // var freePercent = (int)((100 * freeBytes) / totalBytes);
-                diskResult.Add(new DiskMetrics()
+                var exclusionList = new List<DriveType>() { DriveType.Network, DriveType.CDRom, DriveType.Ram, DriveType.Removable };
+                foreach (var driveInfo in DriveInfo.GetDrives())
                 {
-                    DriveLetter = driveInfo.Name,
-                    Free = driveInfo.AvailableFreeSpace,
-                    Total = driveInfo.TotalSize,
-                    Used = driveInfo.TotalSize - driveInfo.AvailableFreeSpace,
-                    DriveFormat = driveInfo.DriveFormat
-                });
+                    try
+                    {
+                        if (exclusionList.Contains(driveInfo.DriveType)) continue;
 
-                
+                        //var totalBytes = driveInfo.TotalSize;
+                        //var freeBytes = driveInfo.AvailableFreeSpace;
+
+                        // var freePercent = (int)((100 * freeBytes) / totalBytes);
+                        diskResult.Add(new DiskMetrics()
+                        {
+                            DriveLetter = driveInfo.Name,
+                            Free = driveInfo.AvailableFreeSpace,
+                            Total = driveInfo.TotalSize,
+                            Used = driveInfo.TotalSize - driveInfo.AvailableFreeSpace,
+                            DriveFormat = driveInfo.DriveFormat
+                        });
+                    }
+                    catch (Exception EX)
+                    {
+
+                        //TODO: IMPLMENTAR EXCEPTION
+                    }
+
+
+
+                }
             }
+            catch (Exception)
+            {
+
+                //TODO: IMPLMENTAR EXCEPTION
+            }
+
             return diskResult;
         }
 

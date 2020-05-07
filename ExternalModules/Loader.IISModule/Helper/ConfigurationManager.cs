@@ -8,7 +8,7 @@ namespace Loader.Helper
 {
     public static class ConfigurationManager
     {
-        private static readonly string _ConfigurationDir = Path.GetPathRoot(Environment.SystemDirectory) + @"\Vivace.MD\Loader.IISModule";
+        private static readonly string _ConfigurationDir = Path.GetPathRoot(Environment.SystemDirectory) + @"\MDMV\Loader.IISModule";
         private static readonly string ConfigurationFullPath = _ConfigurationDir + "\\configuration.config" ;
         static ConfigurationManager()
         {
@@ -24,7 +24,7 @@ namespace Loader.Helper
             get
             {
                 string returnData = File.ReadAllText(ConfigurationFullPath);
-                if (string.IsNullOrEmpty(returnData)) return "http://localhost5555";
+                if (string.IsNullOrEmpty(returnData)) return "http://localhost:5555/";
 
                 return returnData;
             }
