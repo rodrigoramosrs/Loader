@@ -40,7 +40,7 @@ namespace Loader.Service.Services.ComputerMonitor
             //var network = networkManager.GetMetrics();
 
             message.AppendLine($"[CPU: {cpuInformation.LoadPercentage} % " + ((cpuInformation.LoadPercentage > 70  ) ? " [WARNING] " : "") + "]");
-            message.AppendLine($"[RAM: total {memoryInformation.TotalFormatted} | used {memoryInformation.FreeFormatted} | free {memoryInformation.FreeFormatted } - {memoryInformation.FreeInPercent } %" + ((memoryInformation.FreeInPercent < 20  ) ? " [WARNING] " : "") + "]");
+            message.AppendLine($"[RAM: total {memoryInformation.TotalFormatted} | used {memoryInformation.UsedFormatted} | free {memoryInformation.FreeFormatted } - {memoryInformation.FreeInPercent } %" + ((memoryInformation.FreeInPercent < 20  ) ? " [WARNING] " : "") + "]");
             foreach (var disk in diskInformation)
             {
                 message.AppendLine($"[HD {disk.DriveLetter}: total {disk.TotalFormatted} used {disk.UsedFormatted} | free {disk.FreeFormatted } - {disk.FreeInPercent } %" + ((disk.FreeInPercent < 20) ? " [WARNING] " : "") + "]");

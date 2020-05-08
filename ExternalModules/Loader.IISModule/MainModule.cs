@@ -54,7 +54,7 @@ namespace Loader.IISModule
                 bool IsSlowRequest = timer.ElapsedMilliseconds > SlowRequestInMilliseconds;
 
 
-                if (!IsSlowRequest) return;
+               // if (!IsSlowRequest) return;
 
                 foreach (var exclusion in exclusionList)
                     if (context.Request.Path.ToLower().Contains(exclusion)) return;

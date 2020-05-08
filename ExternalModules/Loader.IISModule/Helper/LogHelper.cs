@@ -16,8 +16,11 @@ namespace Loader.Helper
         {
             lock (LockerObject)
             {
-                string filename = Path.GetPathRoot(Environment.SystemDirectory) + @"\MDMV\Loader.IISModule\exception_" + GetUniquePrefixFilename() + ".log";
-                File.WriteAllText(filename, content);
+                string directory = Path.GetPathRoot(Environment.SystemDirectory) + @"\MDMV\Loader.IISModule";
+
+                if (Directory.Exists(directory)) Directory.CreateDirectory(directory);
+
+                File.WriteAllText(directory + "\\exception_" + GetUniquePrefixFilename() + ".log", content);
             }
             
         }
