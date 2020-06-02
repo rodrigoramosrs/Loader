@@ -11,14 +11,18 @@ namespace Loader.Service.Services.ComputerMonitor
 
         private readonly Analytics.BaseAnalyticsService _AnalyticsService;
         private readonly Job.JobService _JobService;
-        public ComputerMonitorService(Analytics.BaseAnalyticsService AnalyticsService, Job.JobService JobService)
+        private readonly Configuration.ConfigurationService _ConfigurationService;
+        public ComputerMonitorService(Analytics.BaseAnalyticsService AnalyticsService, Job.JobService JobService, Configuration.ConfigurationService ConfigurationService)
         {
             _JobService = JobService;
             _AnalyticsService = AnalyticsService;
+            _ConfigurationService = ConfigurationService;
         }
 
         public void RegisterBackgroundJobs()
         {
+            if (!_ConfigurationService.AnalyticsConfiguration.CheckComputerMetrics) return;
+
             RecurringJob.AddOrUpdate<ComputerMonitorService>(
               "VALIDATE-COMPUTER-HEALTH",
               s => s.ValidateComputerHealth(),
@@ -28,6 +32,8 @@ namespace Loader.Service.Services.ComputerMonitor
         }
         public async Task ValidateComputerHealth()
         {
+            if (!_ConfigurationService.AnalyticsConfiguration.CheckComputerMetrics) return;
+
             StringBuilder message = new StringBuilder();
             Infra.Manager.MemoryManager memoryManager = new Infra.Manager.MemoryManager();
             Infra.Manager.DiskManager diskManager = new Infra.Manager.DiskManager();

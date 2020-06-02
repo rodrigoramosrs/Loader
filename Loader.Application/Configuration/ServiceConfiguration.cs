@@ -141,12 +141,30 @@ namespace Loader.Application.Configuration
                 var ConfigurationService = serviceProvider.GetService<Service.Services.Configuration.ConfigurationService>();
                 var AnalyticsConfiguration = ConfigurationService.AnalyticsConfiguration;
                 var CustomerConfiguration = ConfigurationService.CustomerConfiguration;
-                return new Service.Services.Analytics.GoogleAnalyticsService(
-                    AnalyticsConfiguration.ID,
-                    AnalyticsConfiguration.ExceptionID,
-                    CustomerConfiguration.Name,
-                    CustomerConfiguration.ID, 
-                    AnalyticsConfiguration.SaveAnalyticsToFile);
+                Service.Services.Analytics.BaseAnalyticsService baseService;
+                switch (AnalyticsConfiguration.Provider)
+                {
+
+                    case Domain.Models.Configuration.Types.AnalyticsConfigurationProviderTypes.MV:
+                        baseService = new Service.Services.Analytics.MVAnalyticsService(
+                           AnalyticsConfiguration.GoogleProvider.ID,
+                           AnalyticsConfiguration.GoogleProvider.ExceptionID,
+                           CustomerConfiguration.Name,
+                           CustomerConfiguration.ID,
+                           AnalyticsConfiguration.SaveAnalyticsToFile);
+                        break;
+                    case Domain.Models.Configuration.Types.AnalyticsConfigurationProviderTypes.Google:
+                    default:
+                        baseService = new Service.Services.Analytics.GoogleAnalyticsService(
+                           AnalyticsConfiguration.GoogleProvider.ID,
+                           AnalyticsConfiguration.GoogleProvider.ExceptionID,
+                           CustomerConfiguration.Name,
+                           CustomerConfiguration.ID,
+                           AnalyticsConfiguration.SaveAnalyticsToFile);
+                        break;
+                }
+
+                return baseService;
             });
         }
 
@@ -156,7 +174,8 @@ namespace Loader.Application.Configuration
             {
                 var analyticsService = serviceProvider.GetService<Service.Services.Analytics.BaseAnalyticsService>();
                 var JobService = serviceProvider.GetService<Service.Services.Job.JobService>();
-                return new Service.Services.ComputerMonitor.ComputerMonitorService(analyticsService, JobService);
+                var ConfigurationService = serviceProvider.GetService<Service.Services.Configuration.ConfigurationService>();
+                return new Service.Services.ComputerMonitor.ComputerMonitorService(analyticsService, JobService, ConfigurationService);
             });
         }
         

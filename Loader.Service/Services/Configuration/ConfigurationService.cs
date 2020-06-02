@@ -12,14 +12,42 @@ namespace Loader.Service.Services.Configuration
 
         public Domain.Models.Configuration.AnalyticsConfiguration AnalyticsConfiguration
         {
+            
             get
             {
-                return new Domain.Models.Configuration.AnalyticsConfiguration()
+                var returnModel = new Domain.Models.Configuration.AnalyticsConfiguration();
+
+                switch (this.GetConfiguration("Configuration:Analytics:Provider").ToUpper())
                 {
-                    ID = this.GetConfiguration("Configuration:Analytics:ID"),
-                    ExceptionID = this.GetConfiguration("Configuration:Analytics:ExceptionID"),
-                    SaveAnalyticsToFile = this.GetConfiguration("Configuration:Analytics:SaveAnalyticsToFile").ToUpper() == "TRUE",
-                };
+
+                    case "MV":
+                        returnModel.Provider = Domain.Models.Configuration.Types.AnalyticsConfigurationProviderTypes.MV;
+                        break;
+                    default:
+                        returnModel.Provider = Domain.Models.Configuration.Types.AnalyticsConfigurationProviderTypes.Google;
+                        break;
+                }
+
+                returnModel.SaveAnalyticsToFile = this.GetConfiguration("Configuration:Analytics:SaveAnalyticsToFile").ToUpper() == "TRUE";
+                returnModel.CheckComputerMetrics = this.GetConfiguration("Configuration:Analytics:CheckComputerMetrics").ToUpper() == "TRUE";
+
+                returnModel.GoogleProvider.ID = this.GetConfiguration("Configuration:Analytics:GoogleProvider:ID");
+                returnModel.GoogleProvider.ExceptionID = this.GetConfiguration("Configuration:Analytics:GoogleProvider:ExceptionID");
+
+
+                switch (this.GetConfiguration("Configuration:Analytics:MvProvider:DbProvider").ToUpper())
+                {
+                    case "POSTGRE":
+                        returnModel.MvProvider.DbProvider = Domain.Models.Configuration.Types.DatabaseType.Postgre;
+                        break;
+                    case "ORACLE":
+                    default:
+                        returnModel.MvProvider.DbProvider = Domain.Models.Configuration.Types.DatabaseType.Oracle;
+                        break;
+                }
+                returnModel.MvProvider.ConnectionString = this.GetConfiguration("Configuration:Analytics:MvProvider:ConnectionString");
+
+                return returnModel;
             }
         }
 
