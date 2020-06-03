@@ -17,6 +17,7 @@ namespace Loader.IISModule
         //TraceSource tsStatus;
         public void Init(HttpApplication application)
         {
+            Helper.Debugger.Write("MainModule.Init");
             application.EndRequest += Application_EndRequest;
             application.BeginRequest += Application_BeginRequest;
             timer = new Stopwatch();
@@ -24,6 +25,7 @@ namespace Loader.IISModule
 
         private void Application_BeginRequest(object sender, EventArgs e)
         {
+            Helper.Debugger.Write("MainModule.Application_BeginRequest");
             timer.Reset();
             timer.Start();
             var context = (sender as HttpApplication).Context;
@@ -36,9 +38,11 @@ namespace Loader.IISModule
             {
                 timer.Stop();
                 this.SendStatistic((sender as HttpApplication).Context);
+                Helper.Debugger.Write("MainModule.Application_EndRequest");
             }
             catch (Exception ex)
             {
+                Helper.Debugger.Write("MainModule.Application_EndRequest.Exception - " + ex.ToString());
                 LogHelper.WriteErrorLog(ex.ToString());
             }
             
@@ -46,20 +50,19 @@ namespace Loader.IISModule
 
 
         List<string> exclusionList = new List<string>() { ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".javascript", ".js", ".png", ".css", ".ico", "chatserver.svc", ".axd" };
-        int SlowRequestInMilliseconds = (1000 * 3);
+        
         private void SendStatistic(HttpContext context)
         {
+            Helper.Debugger.Write("MainModule.SendStatistic - Aleped " + timer.ElapsedMilliseconds + " | Required " + ConfigurationManager.LogRequestTimeAt);
+            if (ConfigurationManager.LogRequestTimeAt > timer.ElapsedMilliseconds) return;
+
+            foreach (var exclusion in exclusionList)
+                if (context.Request.Path.ToLower().Contains(exclusion)) return;
+
             try
             {
-                bool IsSlowRequest = timer.ElapsedMilliseconds > SlowRequestInMilliseconds;
+                bool IsSlowRequest = timer.ElapsedMilliseconds > ConfigurationManager.ValidSlowDownRequestAt;
 
-
-               // if (!IsSlowRequest) return;
-
-                foreach (var exclusion in exclusionList)
-                    if (context.Request.Path.ToLower().Contains(exclusion)) return;
-
-                
                 StringBuilder builder = new StringBuilder();
                 string PoolName = context.Request.ServerVariables["APP_POOL_ID"];
                 string Path = string.Empty;

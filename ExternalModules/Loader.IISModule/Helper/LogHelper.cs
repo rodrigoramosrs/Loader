@@ -16,7 +16,7 @@ namespace Loader.Helper
         {
             lock (LockerObject)
             {
-                string directory = Path.GetPathRoot(Environment.SystemDirectory) + @"\MDMV\Loader.IISModule";
+                string directory = Path.Combine(ConfigurationManager.RootPath, "error_log");
 
                 if (Directory.Exists(directory)) Directory.CreateDirectory(directory);
 

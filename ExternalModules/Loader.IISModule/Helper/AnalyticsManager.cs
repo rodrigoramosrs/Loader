@@ -49,11 +49,14 @@ namespace Loader.Helper
                 // Create POST data and convert it to a byte array.  
                 httpWebRequest.ContentType = "application/json";
                 httpWebRequest.Method = "POST";
+                var JsonObject = new { Category = Category, ActionName = ActionName, Description = Description, AnalyticsType = AnalyticsType };
+                string JSONString = JSONSerializer.ToJavaScriptObjectNotation(JsonObject);
 
                 using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
                 {
-                    var JsonObject = new { Category = Category, ActionName = ActionName, Description = Description, AnalyticsType = AnalyticsType };
-                    string JSONString = JSONSerializer.ToJavaScriptObjectNotation(JsonObject);
+                    
+
+
                     /* string json = "{" +
                                      "\"Category\":\"" + Category + "\"," +
                                      "\"ActionName\":\"" + ActionName + "\"," +
@@ -62,6 +65,8 @@ namespace Loader.Helper
 
                                    "}";*/
                     streamWriter.Write(JSONString);
+                    Debugger.Write("AnalyticsManager.DoPost() Posted to " + ConfigurationManager.LoaderURL + "api/Analytics/Send | Data: " + JSONString);
+
                 }
                 try
                 {
@@ -73,15 +78,17 @@ namespace Loader.Helper
                 }
                 catch (Exception ex)
                 {
+                    Debugger.Write("AnalyticsManager.DoPost() ex1 " + ex.ToString());
                     LogHelper.WriteErrorLog(ex.ToString());
                 }
-               
+
             }
             catch (Exception ex)
             {
 #if DEBUG
                 throw ex;
 #else
+                Debugger.Write("AnalyticsManager.DoPost() ex2 " + ex.ToString());
                 LogHelper.WriteErrorLog(ex.ToString());
 #endif
             }
