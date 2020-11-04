@@ -18,6 +18,9 @@ namespace Loader.Helper
 
         public static void SendData(string Action, string Details)
         {
+
+            DoLogData(Action, Details);
+
             StringBuilder builder = new StringBuilder(Details);
 
             try
@@ -36,6 +39,19 @@ namespace Loader.Helper
             }
 
 
+
+        }
+
+        private static void DoLogData(string Action, string Details)
+        {
+            if (!ConfigurationManager.LogToFile) return;
+
+            string Folder = ConfigurationManager.RootPath + "\\Analytics";
+            
+            if (!Directory.Exists(Folder))
+                Directory.CreateDirectory(Folder);
+
+            File.WriteAllText(Folder + "\\Analytics_Data_" + DateTime.Now.ToString("HHmmssddMMyyyy") + ".log", Action + ":" + Details);
 
         }
 

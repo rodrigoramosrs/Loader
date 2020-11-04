@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("Loader.IISModule")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Rodrigo Ramos : rodrigoramosrs2@hotmail.com")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("Loader.IISModule")]
